@@ -8,9 +8,38 @@ use App\Models\Zone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Writer\XLSX\Writer;
 
 class RecipientController extends Controller
 {
+    /** Downloads a pre-filled XLSX for bulk-updating officer name/email/CUG at the given level. */
+    public function downloadTemplate(string $level): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        abort_unless(in_array($level, ['zone', 'division', 'district'], true), 404);
+
+        [$rows, $officerLabel] = match ($level) {
+            'zone' => [Zone::orderBy('name')->get()->map(fn (Zone $z) => [$z->name, $z->jc_name, $z->jc_email, $z->jc_cug]), 'JEC'],
+            'division' => [Division::orderBy('name')->get()->map(fn (Division $d) => [$d->name, $d->dc_name, $d->dc_email, $d->dc_cug]), 'DEC'],
+            default => [District::orderBy('name')->get()->map(fn (District $d) => [$d->name, $d->deo_name, $d->deo_email, $d->deo_cug]), 'DEO'],
+        };
+
+        $filename = "{$officerLabel}-directory.xlsx";
+
+        return response()->streamDownload(function () use ($rows, $officerLabel) {
+            // A plain openToFile()-style write to php://output — streamDownload already owns
+            // the Content-Disposition/filename via its own headers, so no need for
+            // openToBrowser()'s (this avoids setting the same header twice).
+            $writer = new Writer();
+            $writer->openToFile('php://output');
+            $writer->addRow(Row::fromValues(['Name', "{$officerLabel} Name", "{$officerLabel} Email", "{$officerLabel} CUG"]));
+            foreach ($rows as $row) {
+                $writer->addRow(Row::fromValues($row));
+            }
+            $writer->close();
+        }, $filename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
+    }
+
     public function index(Request $request): View
     {
         $tab = $request->query('tab', 'zones');

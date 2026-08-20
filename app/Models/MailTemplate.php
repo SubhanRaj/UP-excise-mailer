@@ -5,10 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['name', 'subject', 'body', 'variables', 'created_by'])]
 class MailTemplate extends Model
 {
+    use SoftDeletes;
+
     protected function casts(): array
     {
         return [

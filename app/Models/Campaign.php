@@ -6,10 +6,13 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['name', 'mail_account_id', 'template_id', 'subject', 'body', 'recipient_scope', 'attachment_mode', 'status', 'created_by', 'sent_at'])]
 class Campaign extends Model
 {
+    use SoftDeletes;
+
     protected function casts(): array
     {
         return [

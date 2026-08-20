@@ -13,4 +13,10 @@ class Zone extends Model
     {
         return $this->hasMany(Division::class);
     }
+
+    /** JEC = Joint Excise Commissioner. Falls back to a placeholder until a real name is on file. */
+    public function officerDisplayName(): string
+    {
+        return $this->jc_name ?: "JEC - {$this->name}";
+    }
 }

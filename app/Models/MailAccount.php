@@ -7,11 +7,14 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['section_id', 'gmail_address', 'app_password', 'smtp_host', 'smtp_port', 'throttle_seconds', 'daily_send_cap', 'is_active'])]
 #[Hidden(['app_password'])]
 class MailAccount extends Model
 {
+    use SoftDeletes;
+
     protected function casts(): array
     {
         return [

@@ -19,4 +19,10 @@ class Division extends Model
     {
         return $this->hasMany(District::class);
     }
+
+    /** DEC = Deputy Excise Commissioner. Falls back to a placeholder until a real name is on file. */
+    public function officerDisplayName(): string
+    {
+        return $this->dc_name ?: "DEC - {$this->name}";
+    }
 }
