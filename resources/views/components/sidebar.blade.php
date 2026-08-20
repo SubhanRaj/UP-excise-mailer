@@ -43,27 +43,35 @@
         </a>
 
         @auth
-        @if(auth()->user()->isAdmin())
+        @if(auth()->user()->isAdmin() || auth()->user()->hasPrivilege('mail-accounts.manage') || auth()->user()->hasPrivilege('sections.manage') || auth()->user()->hasPrivilege('users.manage') || auth()->user()->hasPrivilege('designations.manage'))
         <span class="nav-section-label">Manage</span>
+        @endif
 
+        @if(auth()->user()->hasPrivilege('mail-accounts.manage'))
         <a href="{{ route('admin.mail-accounts.index') }}" wire:navigate data-tooltip="Mail Accounts"
            class="nav-link {{ request()->routeIs('admin.mail-accounts.*') ? 'nav-link-active' : 'nav-link-idle' }}">
             <i class="ti ti-brand-gmail w-5 text-center text-base flex-shrink-0"></i>
             <span class="sidebar-text">Mail Accounts</span>
         </a>
+        @endif
 
+        @if(auth()->user()->hasPrivilege('sections.manage'))
         <a href="{{ route('admin.sections.index') }}" wire:navigate data-tooltip="Sections"
            class="nav-link {{ request()->routeIs('admin.sections.*') ? 'nav-link-active' : 'nav-link-idle' }}">
             <i class="ti ti-building w-5 text-center text-base flex-shrink-0"></i>
             <span class="sidebar-text">Sections</span>
         </a>
+        @endif
 
+        @if(auth()->user()->hasPrivilege('users.manage'))
         <a href="{{ route('admin.users.index') }}" wire:navigate data-tooltip="Users"
            class="nav-link {{ request()->routeIs('admin.users.*') ? 'nav-link-active' : 'nav-link-idle' }}">
             <i class="ti ti-users w-5 text-center text-base flex-shrink-0"></i>
             <span class="sidebar-text">Users</span>
         </a>
+        @endif
 
+        @if(auth()->user()->hasPrivilege('designations.manage'))
         <a href="{{ route('admin.designations.index') }}" wire:navigate data-tooltip="Designations"
            class="nav-link {{ request()->routeIs('admin.designations.*') ? 'nav-link-active' : 'nav-link-idle' }}">
             <i class="ti ti-id-badge-2 w-5 text-center text-base flex-shrink-0"></i>

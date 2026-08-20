@@ -11,13 +11,14 @@ class UpdateDesignationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->isAdmin() ?? false;
+        return $this->user()?->hasPrivilege('designations.manage') ?? false;
     }
 
     public function rules(): array
     {
         return [
             'name' => ['required', 'string', 'max:150', Rule::unique('designations', 'name')->ignore($this->route('designation'))],
+            'slug' => ['required', 'string', 'max:160'],
             'sort_order' => ['nullable', 'integer'],
             'default_privileges' => ['nullable', 'array'],
             'default_privileges.*' => ['string', 'in:'.implode(',', User::PRIVILEGES)],

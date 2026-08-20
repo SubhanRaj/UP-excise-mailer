@@ -69,7 +69,9 @@
                     <select name="role" required class="field-input @error('role') field-error @enderror">
                         <option value="User" {{ old('role', $user->role) === 'User' ? 'selected' : '' }}>User</option>
                         <option value="Admin" {{ old('role', $user->role) === 'Admin' ? 'selected' : '' }}>Admin</option>
+                        @if(auth()->user()->isAdmin())
                         <option value="SuperAdmin" {{ old('role', $user->role) === 'SuperAdmin' ? 'selected' : '' }}>SuperAdmin</option>
+                        @endif
                     </select>
                     @error('role')<p class="field-err-msg">{{ $message }}</p>@enderror
                 </div>

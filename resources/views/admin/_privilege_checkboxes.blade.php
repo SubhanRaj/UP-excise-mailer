@@ -4,11 +4,18 @@
         'users.manage' => 'Manage Users',
         'sections.manage' => 'Manage Sections',
         'mail-accounts.manage' => 'Manage Mail Accounts',
+        'designations.manage' => 'Manage Designations',
         'templates.manage' => 'Manage Templates',
         'campaigns.send' => 'Send Campaigns',
         'recipients.import' => 'Import Recipients',
         'activity-logs.view' => 'View Activity Logs',
     ];
+
+    // A non-SuperAdmin can only grant privileges they themselves hold — matches the server-side
+    // guard in Store/UpdateUserRequest, so the form never offers a choice that'll just 403.
+    if (! auth()->user()->isAdmin()) {
+        $privilegeLabels = array_intersect_key($privilegeLabels, array_flip(auth()->user()->privileges ?? []));
+    }
 @endphp
 
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">

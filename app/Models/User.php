@@ -29,6 +29,7 @@ class User extends Authenticatable
         'users.manage',
         'sections.manage',
         'mail-accounts.manage',
+        'designations.manage',
         'templates.manage',
         'campaigns.send',
         'recipients.import',

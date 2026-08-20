@@ -77,8 +77,10 @@ class UserManagementController extends Controller
     }
 
     /** Re-send the onboarding link for a user who never completed activation. */
-    public function resendActivation(User $user): RedirectResponse
+    public function resendActivation(Request $request, User $user): RedirectResponse
     {
+        abort_if(! $request->user()->isAdmin() && $user->isAdmin(), 403);
+
         if ($user->email_verified_at !== null) {
             flash()->warning("{$user->name}'s account is already active.");
 
@@ -101,6 +103,8 @@ class UserManagementController extends Controller
 
     public function edit(User $user): View
     {
+        abort_if(! auth()->user()->isAdmin() && $user->isAdmin(), 403);
+
         $designations = Designation::orderBy('sort_order')->orderBy('name')->get();
         $sections = Section::orderBy('name')->get();
 
@@ -127,6 +131,8 @@ class UserManagementController extends Controller
 
     public function destroy(Request $request, User $user): RedirectResponse
     {
+        abort_if(! $request->user()->isAdmin() && $user->isAdmin(), 403);
+
         if ($user->id === $request->user()->id) {
             flash()->warning('You cannot deactivate your own account.');
 

@@ -75,13 +75,17 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'privilege:activity-
     Route::post('/activity-logs/filters', [ActivityLogController::class, 'updateFilters'])->name('activity.filters');
 });
 
-// ── Admin: sections, mail accounts, designations, users — SuperAdmin only ───────────────
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'is_admin', 'throttle:mutations'])->group(function () {
-    Route::resource('sections', SectionController::class)->except(['show']);
-    Route::resource('mail-accounts', MailAccountController::class)->except(['show'])->parameters(['mail-accounts' => 'mailAccount']);
-    Route::resource('designations', DesignationController::class)->except(['show']);
+// ── Admin: sections, mail accounts, designations, users — SuperAdmin, or the matching
+//    privilege (privilege:X already lets SuperAdmin through too, via User::hasPrivilege()) ──
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'throttle:mutations'])->group(function () {
+    Route::resource('sections', SectionController::class)->except(['show'])
+        ->middleware('privilege:sections.manage');
+    Route::resource('mail-accounts', MailAccountController::class)->except(['show'])
+        ->parameters(['mail-accounts' => 'mailAccount'])->middleware('privilege:mail-accounts.manage');
+    Route::resource('designations', DesignationController::class)->except(['show'])
+        ->middleware('privilege:designations.manage');
 
-    Route::prefix('users')->name('users.')->group(function () {
+    Route::prefix('users')->name('users.')->middleware('privilege:users.manage')->group(function () {
         Route::get('/', [UserManagementController::class, 'index'])->name('index');
         Route::get('/create', [UserManagementController::class, 'create'])->name('create');
         Route::post('/', [UserManagementController::class, 'store'])->name('store');
