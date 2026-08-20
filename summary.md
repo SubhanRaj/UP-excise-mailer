@@ -90,9 +90,10 @@ anywhere yet. This is the very next thing to fix — see M4 below.
   `3d8983d`.
 - `~/.config/systemd/user/up-excise-mailer-tunnel.service` created,
   enabled, and running (`systemctl --user is-active` → `active`) — survives
-  logout/reboot. `php artisan serve` and `php artisan queue:work` are
-  **still manually started (nohup), not yet systemd units** — see "Not yet
-  done" #11.
+  logout/reboot. **Update 2026-08-20: `php artisan serve` and both queue
+  workers are also now systemd `--user` units** (see the dated section
+  below) — nothing in this app runs as an unsupervised manual process
+  anymore.
 - End-to-end verified: invite email sent to redacted-personal-email@example.com via
   Resend, onboarding link works through the real domain, login page loads
   at `https://mailer.exciseup.in/login`.
@@ -1059,7 +1060,8 @@ with the template's actual body HTML.
    commands themselves). Once done: switch `~/.cloudflared/mailer-config.yml`
    ingress from `http://127.0.0.1:8000` to `http://127.0.0.1:8082`, add
    `storage`/`bootstrap/cache` to the Apache sandbox override's
-   `ReadWritePaths=` (same gotcha budget-tracker hit), convert
-   `php artisan serve`/`queue:work` from manual nohup processes to systemd
-   `--user` units (see `pdf-pipeline-queue.service`/`pdf-pipeline-queue2.service`
-   for the pattern), write `DEPLOY.md`.
+   `ReadWritePaths=` (same gotcha budget-tracker hit), retire
+   `up-excise-mailer-app.service` (Apache/php-fpm replaces `artisan
+   serve` at that point, matching how the two sibling apps run — see the
+   2026-08-20 systemd section above for why this app currently still
+   needs an app-serving unit that they don't), write `DEPLOY.md`.
