@@ -46,11 +46,19 @@
                     @error('smtp_host')<p class="field-err-msg">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label class="field-label">SMTP Port</label>
-                    <input type="number" id="smtp_port" name="smtp_port" value="{{ old('smtp_port', 587) }}" required class="field-input @error('smtp_port') field-error @enderror">
-                    <p class="field-hint">587 for TLS, or 465 for SSL.</p>
-                    @error('smtp_port')<p class="field-err-msg">{{ $message }}</p>@enderror
+                    <label class="field-label">Connection Security</label>
+                    <select id="auth_mode" class="field-input">
+                        <option value="tls">TLS (port 587)</option>
+                        <option value="ssl">SSL (port 465)</option>
+                    </select>
                 </div>
+            </div>
+
+            <div>
+                <label class="field-label">SMTP Port</label>
+                <input type="number" id="smtp_port" name="smtp_port" value="{{ old('smtp_port', 587) }}" required class="field-input @error('smtp_port') field-error @enderror">
+                <p class="field-hint">Filled in automatically from Connection Security above — only change it if your provider uses a different port.</p>
+                @error('smtp_port')<p class="field-err-msg">{{ $message }}</p>@enderror
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -108,6 +116,11 @@
                 document.getElementById('password-hint').textContent = preset.hint;
                 document.getElementById('smtp_host').value = preset.host;
                 document.getElementById('smtp_port').value = preset.port;
+                document.getElementById('auth_mode').value = preset.port === 465 ? 'ssl' : 'tls';
+            });
+
+            document.getElementById('auth_mode')?.addEventListener('change', function () {
+                document.getElementById('smtp_port').value = this.value === 'ssl' ? 465 : 587;
             });
         });
     </script>

@@ -69,21 +69,25 @@ class TestEmailSender extends Component
             'officer' => auth()->user()->name, 'name' => auth()->user()->name, 'email' => $email,
         ];
 
-        $mail = new CampaignMail(
-            MailTemplate::render($template->subject, $vars),
-            MailTemplate::render($template->body, $vars),
-            new CampaignRecipient(['email' => $email]),
-        );
-
         $via = 'Resend';
+        $account = null;
 
         if ($this->sendVia === 'mail_account') {
             $account = MailAccount::findOrFail($this->mailAccountId);
             abort_unless(auth()->user()->canUseMailAccount($account), 403);
+            $via = $account->gmail_address;
+        }
 
+        $mail = new CampaignMail(
+            MailTemplate::render($template->subject, $vars),
+            MailTemplate::render($template->body, $vars),
+            new CampaignRecipient(['email' => $email]),
+            $account,
+        );
+
+        if ($account) {
             config(['mail.mailers.dynamic' => $account->mailerConfig()]);
             Mail::mailer('dynamic')->to($email)->send($mail);
-            $via = $account->gmail_address;
         } else {
             Mail::to($email)->send($mail);
         }

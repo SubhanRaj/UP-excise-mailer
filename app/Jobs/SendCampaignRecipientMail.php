@@ -39,7 +39,7 @@ class SendCampaignRecipientMail implements ShouldQueue
 
             Mail::mailer('dynamic')
                 ->to($recipient->email)
-                ->send(new CampaignMail($this->renderedSubject, $this->renderedBody, $recipient));
+                ->send(new CampaignMail($this->renderedSubject, $this->renderedBody, $recipient, $account));
 
             $recipient->update(['status' => 'sent', 'sent_at' => now()]);
         } catch (\Throwable $e) {
