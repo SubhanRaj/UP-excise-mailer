@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\MailTemplateController;
 use App\Livewire\CampaignBuilder;
+use App\Livewire\TestEmailSender;
 use App\Http\Controllers\RecipientController;
 use App\Http\Controllers\RecipientListController;
 use App\Livewire\Dashboard;
@@ -62,7 +63,11 @@ Route::middleware(['auth', 'privilege:recipients.import', 'throttle:mutations'])
 
 Route::get('/campaigns', [CampaignController::class, 'index'])->middleware('auth')->name('campaigns.index');
 Route::get('/campaigns/create', CampaignBuilder::class)->middleware(['auth', 'privilege:campaigns.send'])->name('campaigns.create');
+Route::get('/campaigns/test-send', TestEmailSender::class)->middleware(['auth', 'is_admin'])->name('campaigns.test-send');
+Route::get('/campaigns/sent-mail', [CampaignController::class, 'sentMail'])->middleware('auth')->name('campaigns.sent-mail');
 Route::get('/campaigns/{campaign}', [CampaignController::class, 'show'])->middleware('auth')->name('campaigns.show');
+Route::post('/campaigns/{campaign}/recipients/{recipient}/retry', [CampaignController::class, 'retryRecipient'])
+    ->middleware(['auth', 'privilege:campaigns.send', 'throttle:mutations'])->name('campaigns.retry-recipient');
 
 // ── Admin: activity log — SuperAdmin + anyone granted activity-logs.view ────────────────
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'privilege:activity-logs.view', 'throttle:mutations'])->group(function () {

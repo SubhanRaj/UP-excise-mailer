@@ -3,13 +3,27 @@
 
     <div class="flex items-center justify-between mb-4">
         <p class="text-sm text-slate-500 dark:text-slate-400">{{ $campaigns->total() }} campaign{{ $campaigns->total() === 1 ? '' : 's' }}</p>
-        @if(auth()->user()->hasPrivilege('campaigns.send'))
-        <a href="{{ route('campaigns.create') }}" wire:navigate
-           class="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 sm:px-4 py-2 rounded-lg transition-colors">
-            <i class="ti ti-send text-base"></i>
-            <span>New Campaign</span>
-        </a>
-        @endif
+        <div class="flex items-center gap-2">
+            <a href="{{ route('campaigns.sent-mail') }}" wire:navigate
+               class="inline-flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-medium px-3 sm:px-4 py-2 rounded-lg transition-colors">
+                <i class="ti ti-mail-check text-base"></i>
+                <span>Sent Mail</span>
+            </a>
+            @if(auth()->user()->isAdmin())
+            <a href="{{ route('campaigns.test-send') }}" wire:navigate
+               class="inline-flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-medium px-3 sm:px-4 py-2 rounded-lg transition-colors">
+                <i class="ti ti-flask text-base"></i>
+                <span>Send Test Email</span>
+            </a>
+            @endif
+            @if(auth()->user()->hasPrivilege('campaigns.send'))
+            <a href="{{ route('campaigns.create') }}" wire:navigate
+               class="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 sm:px-4 py-2 rounded-lg transition-colors">
+                <i class="ti ti-send text-base"></i>
+                <span>New Campaign</span>
+            </a>
+            @endif
+        </div>
     </div>
 
     <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
