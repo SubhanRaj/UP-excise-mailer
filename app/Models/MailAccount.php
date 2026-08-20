@@ -46,6 +46,12 @@ class MailAccount extends Model
             'encryption' => $this->smtp_port === 465 ? 'ssl' : 'tls',
             'username' => $this->gmail_address,
             'password' => $this->app_password,
+            // PHP's socket default (60s) isn't enough for some relays (confirmed live: NIC's
+            // mGovCloud/Zoho pauses to scan and rename an attachment before accepting the
+            // message, well past 60s) — the send still completes on the relay's side, but a
+            // too-short timeout here would sever the connection first and leave this app
+            // thinking it failed when the recipient already has the email.
+            'timeout' => 180,
         ];
     }
 }
