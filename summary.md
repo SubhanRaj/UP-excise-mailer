@@ -492,6 +492,21 @@ own work but now live in the same `mail_templates` table.
   linking back to each row's campaign. Points to Activity Log for test
   sends rather than duplicating that list.
 
+### Send Test Email: pick a mail account too, not just Resend (2026-08-20, done)
+
+User pushback on the first version: it explained *why* it only sent via
+Resend instead of just letting you test what you actually want to test — a
+section's Gmail account, the same one campaigns really send through. Fixed
+by adding a **Send Via** toggle to `TestEmailSender`: `system` (Resend,
+still the default) or `mail_account` (reuses `MailAccount::mailerConfig()`
++ `config(['mail.mailers.dynamic' => ...])` — the exact same dynamic-mailer
+pattern `SendCampaignRecipientMail` uses for real campaigns), with the
+account dropdown scoped by `User::canUseMailAccount()` just like the
+campaign builder's own picker. Dropped the explanatory blurb entirely —
+the toggle makes the choice self-evident, no prose needed. Verified with a
+Feature test: SuperAdmin sends via a mail_account, asserts `CampaignMail`
+actually dispatched through the fake.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
