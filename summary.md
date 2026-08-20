@@ -437,15 +437,68 @@ own work but now live in the same `mail_templates` table.
   was gitignored and never tracked before pushing, no other secret files
   staged.
 
+### Test-send, daily send cap, retry-failed, and a global Sent Mail log (2026-08-20, done)
+
+- **Send Test Email** (`/campaigns/test-send`, SuperAdmin-only via `is_admin`
+  middleware) — `App\Livewire\TestEmailSender`. Deliberately **not** a
+  `Campaign` (no `campaigns`/`campaign_recipients` rows) — sends through
+  `config('mail.default')` (Resend, the same trusted system sender as
+  invites/OTP), not a per-section Gmail `mail_account`, so "is the software
+  working" can be answered without one being configured yet. Reuses
+  `App\Mail\CampaignMail` with an unsaved (never persisted)
+  `CampaignRecipient` instance — no new Mailable needed. Recipient is
+  either an existing app user (dropdown) or any manually-typed address;
+  template defaults to "Test Email — Do Not Action" but any template can
+  be picked. Logged via `ActivityLog::record('test-email.send', ...)` —
+  already visible at `/admin/activity-logs` with zero extra work, since
+  that page auto-derives its action filter dropdown from distinct
+  `activity_logs.action` values. Verified with `Mail::fake()` +
+  `Mail::assertSent()`, not just "it didn't throw" — **and clarified for
+  the user that this fake-mail verification never actually sent anything
+  to a real inbox**, since they asked where the test email went.
+- **`daily_send_cap` enforcement** — this `mail_accounts` column existed
+  since M1 but nothing ever read it (confirmed by grepping the whole
+  `app/` tree for the column name outside migrations/validation — a real
+  "looks configured, does nothing" gap, caught during the security
+  self-audit). `CampaignBuilder::sendDelaySeconds()` now buckets
+  recipients past the day's remaining cap into following days (`day *
+  86400 + positionInDay * throttle_seconds`), accounting for how many
+  this account already sent *today* across any campaign before this one
+  queues. Marked with a `ponytail:` comment: the already-sent-today count
+  isn't locked against a second campaign queuing concurrently on the same
+  account — fine for how this app is actually used (occasional manual
+  campaigns), would need a real reservation/lock if that ever changes.
+  Verified with `Queue::fake()` + inspecting each dispatched job's actual
+  delay: 5 recipients at cap=2 landed in day buckets `[0,0,1,1,2]` exactly
+  as intended.
+- **Resend-failed / retry-recipient action**
+  (`CampaignController::retryRecipient()`, a "Retry" button next to any
+  `failed` row on `/campaigns/{campaign}`) — re-derives the recipient's
+  `{{variable}}` values from the *current* zone/division/district/
+  `recipient_list_item` row via the new `CampaignRecipient::resolveVars()`
+  (not a stale snapshot from queue time), so retrying after fixing a bad
+  email address in `/recipients` also picks up any other corrections made
+  since. Resets `status` to `pending`, clears `error_message`, dispatches
+  immediately (no delay — it's a single manual retry, not part of a
+  throttled batch). Verified end-to-end: seeded a district with a
+  corrected officer name different from the stale `campaign_recipients`
+  row, hit the retry route, asserted the dispatched job's rendered
+  subject/body contain the *current* data, not what was originally queued.
+- **Global Sent Mail log** (`/campaigns/sent-mail`) — the user asked "can
+  we add an option to show the mail sent from this software"; per-campaign
+  status already existed but there was no single place to see everything
+  actually delivered across every campaign. Plain paginated
+  `CampaignRecipient::where('status', 'sent')` list, most recent first,
+  linking back to each row's campaign. Points to Activity Log for test
+  sends rather than duplicating that list.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
    plain paginated table you have to manually refresh) — `wire:poll` on a
    small Livewire status component would match plan.md's "status page
    polls for progress" note.
-2. Resend-failed / retry-recipient action on the campaign status page —
-   right now a failed row just sits there with its error message.
-3. Proper Pest tests per plan.md's Verification section (invite→OTP flow,
+2. Proper Pest tests per plan.md's Verification section (invite→OTP flow,
    RBAC cross-section denial, CSV/XLSX/PDF import round-trip) — only
    `ZipRecipientMatcherTest` exists so far; the app is actually wired for
    plain PHPUnit (`tests/Unit/ExampleTest.php` is PHPUnit-style, not
@@ -453,7 +506,7 @@ own work but now live in the same `mail_templates` table.
    deciding one way or the other rather than mixing. Also worth a test for
    `RecipientImportParser` and for the Blade `{{ }}`-in-`{{ }}` footgun
    (see M4) now that it's bitten twice in this codebase.
-4. **Apache vhost on port 8082** — needs `sudo` (this session didn't have
+3. **Apache vhost on port 8082** — needs `sudo` (this session didn't have
    it; ask the user for it directly, or have them run the vhost-creation
    commands themselves). Once done: switch `~/.cloudflared/mailer-config.yml`
    ingress from `http://127.0.0.1:8000` to `http://127.0.0.1:8082`, add

@@ -216,7 +216,16 @@ class CampaignBuilder extends Component
             $singleFilePath = $this->singleFile->store('campaign-attachments', 'local');
         }
 
-        DB::transaction(function () use ($recipients, $account, $singleFilePath) {
+        // ponytail: counts today's already-sent rows once per queue action, not locked against
+        // another campaign queuing concurrently on the same account — fine for this app's
+        // actual usage (occasional manual campaigns), would need a lock/reservation if
+        // campaigns ever get queued from multiple places at once.
+        $alreadySentToday = $account->daily_send_cap
+            ? CampaignRecipient::whereHas('campaign', fn ($q) => $q->where('mail_account_id', $account->id))
+                ->where('status', 'sent')->whereDate('sent_at', today())->count()
+            : 0;
+
+        DB::transaction(function () use ($recipients, $account, $singleFilePath, $alreadySentToday) {
             $campaign = Campaign::create([
                 'name' => $this->name,
                 'mail_account_id' => $account->id,
@@ -258,7 +267,7 @@ class CampaignBuilder extends Component
                     $recipient->id,
                     MailTemplate::render($this->subject, $r['vars']),
                     MailTemplate::render($this->body, $r['vars']),
-                )->delay(now()->addSeconds($account->throttle_seconds * $index));
+                )->delay(now()->addSeconds($this->sendDelaySeconds($index, $account, $alreadySentToday)));
             }
         });
 
@@ -280,6 +289,31 @@ class CampaignBuilder extends Component
     public function selectAllDistricts(): void
     {
         $this->selectedDistrictIds = $this->selectedDistrictIds ? [] : District::pluck('id')->map(fn ($id) => (string) $id)->all();
+    }
+
+    /**
+     * Staggers within a day by throttle_seconds as before; when the account has a
+     * daily_send_cap, recipients past that many-per-day get pushed into the following day(s)
+     * instead of bursting past the cap.
+     */
+    private function sendDelaySeconds(int $index, MailAccount $account, int $alreadySentToday): int
+    {
+        if (! $account->daily_send_cap) {
+            return $account->throttle_seconds * $index;
+        }
+
+        $cap = $account->daily_send_cap;
+        $remainingToday = max(0, $cap - $alreadySentToday);
+
+        if ($index < $remainingToday) {
+            return $account->throttle_seconds * $index;
+        }
+
+        $indexAfterToday = $index - $remainingToday;
+        $day = 1 + intdiv($indexAfterToday, $cap);
+        $positionInDay = $indexAfterToday % $cap;
+
+        return $day * 86400 + $positionInDay * $account->throttle_seconds;
     }
 
     /** @return Collection<int, array{type:string, ref_id:int, name:?string, email:?string, vars:array}> */

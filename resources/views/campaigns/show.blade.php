@@ -41,6 +41,7 @@
                         <th class="text-left px-4 py-3">Email</th>
                         <th class="text-left px-4 py-3">Status</th>
                         <th class="text-left px-4 py-3">Sent At</th>
+                        <th class="text-right px-4 py-3">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
@@ -63,9 +64,17 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 text-slate-400 dark:text-slate-500">{{ $recipient->sent_at?->format('d M Y, H:i') ?? '—' }}</td>
+                        <td class="px-4 py-3 text-right">
+                            @if($recipient->status === 'failed' && auth()->user()->hasPrivilege('campaigns.send'))
+                            <form method="POST" action="{{ route('campaigns.retry-recipient', [$campaign, $recipient]) }}">
+                                @csrf
+                                <button type="submit" class="text-indigo-600 dark:text-indigo-400 hover:underline">Retry</button>
+                            </form>
+                            @endif
+                        </td>
                     </tr>
                     @empty
-                    <tr><td colspan="4" class="px-4 py-8 text-center text-slate-400 dark:text-slate-500">No recipients.</td></tr>
+                    <tr><td colspan="5" class="px-4 py-8 text-center text-slate-400 dark:text-slate-500">No recipients.</td></tr>
                     @endforelse
                 </tbody>
             </table>
