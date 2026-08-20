@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\SendCampaignRecipientMail;
+use App\Models\ActivityLog;
 use App\Models\Campaign;
 use App\Models\CampaignRecipient;
 use App\Models\MailTemplate;
@@ -42,7 +43,13 @@ class CampaignController extends Controller
             ->latest('sent_at')
             ->paginate(50);
 
-        return view('campaigns.sent-mail', ['sent' => $sent]);
+        $testSends = ActivityLog::where('action', 'test-email.send')
+            ->with('user')
+            ->latest('created_at')
+            ->limit(50)
+            ->get();
+
+        return view('campaigns.sent-mail', ['sent' => $sent, 'testSends' => $testSends]);
     }
 
     public function retryRecipient(Campaign $campaign, CampaignRecipient $recipient): RedirectResponse

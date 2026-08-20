@@ -38,7 +38,7 @@
                                     <i class="ti ti-pencil text-base"></i>
                                 </a>
                                 <form method="POST" action="{{ route('admin.sections.destroy', $section) }}"
-                                      onsubmit="return confirm('Delete this section?');">
+                                      data-confirm="Delete this section?">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Delete">

@@ -43,7 +43,7 @@
                                     <i class="ti ti-pencil text-base"></i>
                                 </a>
                                 <form method="POST" action="{{ route('templates.destroy', $template) }}"
-                                      onsubmit="return confirm('Delete this template?');">
+                                      data-confirm="Delete this template?">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Delete">

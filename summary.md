@@ -777,6 +777,111 @@ stored via Laravel's `encrypted` cast and only edge whitespace is
 trimmed by the framework's default `TrimStrings` middleware — mixed-
 case alphanumeric passwords pass through byte-for-byte, no bug there.
 
+### Mail Account form: hide SMTP details for known providers, TLS default (2026-08-20, done)
+
+User: raw SMTP host/port/security fields don't make sense to ask about
+for Gmail/NIC — those are fully documented and already filled in. The
+SMTP Host / Connection Security / SMTP Port block on Add/Edit Mail
+Account is now hidden entirely unless Provider is "Custom SMTP" (the
+Provider-switch JS toggles a `.hidden` class); values are still set
+behind the scenes for Gmail/NIC via the existing preset objects, so
+nothing about form submission changed, only what's shown. Guarded
+against a real edge case: a validation-error round-trip on a Custom
+SMTP submission needed the block to *stay* visible (so the error message
+and the admin's typed values aren't hidden) — computed server-side via
+`$errors->has('smtp_host') || $errors->has('smtp_port') ||` (create)
+`old('smtp_host')` not matching a known host, or (edit) the account's
+already-stored host not being Gmail/NIC. Also switched the one existing
+live mail account (`taskupexcise@up.gov.in`) from SSL/465 to TLS/587
+per the user's explicit preference.
+
+### Real audit-trail gap found: only 2 of the documented actions were ever logged (2026-08-20, done)
+
+User: "why does the audit log only have two actions?" — checked the
+live DB and found exactly `auth.login` and `test-email.send` across all
+12 rows, despite CLAUDE.md documenting "Full audit trail — every
+non-GET authenticated request... `ActivityLog::record()`". The
+generic auto-logging middleware this describes was **never actually
+built** — only two manual call sites existed (the `Login`/`Logout`
+event listeners in `AppServiceProvider`, and `TestEmailSender`). Every
+section/user/mail-account/template/campaign create-update-delete this
+whole session went completely unlogged. Fixed by porting
+`~/Sites/excise-budget-tracker/app/Http/Middleware/LogMutation.php`
+verbatim (per CLAUDE.md's own "don't diverge from these patterns
+without a reason" — that app already has the real implementation this
+one's docs describe): appended globally in `bootstrap/app.php`, logs
+every authenticated non-GET/HEAD/OPTIONS request using the route name
+as the action (e.g. `admin.sections.store`), skipping the four
+login/OTP/logout route names that already get a dedicated, more
+detailed entry from the event listeners. Verified end-to-end: a POST to
+`/admin/sections` now creates an `activity_logs` row with action
+`admin.sections.store`; a GET does not.
+
+### Test-send failures now show up as failures, not a blank crash (2026-08-20, done)
+
+User: add a Status column so troubleshooting is possible. Real gap this
+exposed: `TestEmailSender::send()` had no try/catch at all — a failed
+send (like the two live SMTP errors hit this session) threw straight
+through to Laravel's raw error page and left **no record anywhere** of
+the attempt, success or failure. Now wrapped: on success, logs
+`status: sent` (unchanged behavior); on failure, logs `status: failed`
++ a truncated error message and shows a friendly inline `flash()->error()`
+instead of crashing the page — matching this app's established
+try/catch-and-flash convention used elsewhere (e.g.
+`UserManagementController::store()`). The Sent Mail page's Test Sends
+table has a new **Status** column (green "sent" / red "failed", with
+the error message shown under a failed row) — older rows logged before
+this fix have no `status` key and default to displaying "sent" (correct,
+since the old code path only ever logged after a successful send).
+
+### Sent Mail promoted to a first-class page, merged with test sends (2026-08-20, done)
+
+User: "why is sent mail not populated... I've received a test email" —
+by original design, test sends only went to Activity Log, not Sent
+Mail, which only tracked `campaign_recipients` rows; confusing since
+both are "mail this app sent." Fixed two ways: (1) `sentMail()` now
+also fetches the 50 most recent `test-email.send` activity-log rows and
+the page shows two sections, **Campaign Sends** (existing, paginated)
+and **Test Sends** (new, with the Status column above); (2) per "put
+sent mail as a separate dashboard entity," **Sent Mail is now its own
+top-level sidebar link** (icon `ti-mail-check`, right under Campaigns)
+instead of a button buried in the Campaigns page header — removed that
+now-redundant header button. Breadcrumb updated to not nest under
+Campaigns either.
+
+### Nicer confirm dialogs, matching ~/Sites/pla (2026-08-20, done)
+
+User pointed at `~/Sites/pla`'s nicer delete confirmations. Chose the
+smaller of two options presented (kept this app's existing form-POST +
+redirect + flash pattern rather than pla's full AJAX+jQuery rewrite) —
+replaced the plain browser `confirm()` popup on all 6 delete/deactivate
+forms (Sections, Mail Accounts, Users, Designations, Recipient Lists,
+Templates) with a SweetAlert2 dialog. Implementation is a single
+delegated `submit` listener registered once in the shared layout
+(inside the existing `window.__layoutScriptsInitialized` guard, so it
+survives `wire:navigate` correctly without the redeclaration bug fixed
+earlier this session) — any current or future form just needs
+`data-confirm="message"` instead of the old inline `onsubmit="return
+confirm(...)"`, no per-page JS required.
+
+### "Send Test" shortcut on the Mail Accounts list (2026-08-20, done)
+
+Added a flask-icon "Send Test Email" link per row on
+`/admin/mail-accounts` (next to Edit/Delete, gated by the
+`test-email.send` privilege) — links to `campaigns.test-send` with
+`?mailAccountId=<id>`, which `TestEmailSender::mount()` now reads to
+pre-select that exact account (`sendVia=mail_account`) instead of
+making the admin pick it again from a dropdown — test the account
+you're already looking at, right from where you manage it. Verified via
+Livewire test with a query-string-driven mount.
+
+**Also found and fixed the actual reason Task Force couldn't see Send
+Test Email at all**: their live account has every other privilege
+granted (users/sections/mail-accounts/designations/templates.manage,
+campaigns.send, recipients.import, activity-logs.view) but
+`test-email.send` was simply never added to the list — not a bug,
+just never granted. Added it directly to their `privileges` column.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a

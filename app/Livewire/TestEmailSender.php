@@ -37,10 +37,22 @@ class TestEmailSender extends Component
 
     public function mount(): void
     {
-        abort_unless(auth()->user()->hasPrivilege('test-email.send'), 403);
+        $user = auth()->user();
+        abort_unless($user->hasPrivilege('test-email.send'), 403);
 
-        $this->sendVia = auth()->user()->isAdmin() ? 'system' : 'mail_account';
+        $this->sendVia = $user->isAdmin() ? 'system' : 'mail_account';
         $this->templateId = (string) (MailTemplate::where('name', 'Test Email — Do Not Action')->value('id') ?? '');
+
+        // Arrived from a "Send Test" link on a specific Mail Accounts row — pre-select that
+        // account instead of making them pick it again from the dropdown.
+        $requestedAccountId = request()->query('mailAccountId');
+        if ($requestedAccountId) {
+            $account = MailAccount::find($requestedAccountId);
+            if ($account && $user->canUseMailAccount($account)) {
+                $this->sendVia = 'mail_account';
+                $this->mailAccountId = (string) $account->id;
+            }
+        }
     }
 
     public function send(): void
@@ -85,16 +97,27 @@ class TestEmailSender extends Component
             $account,
         );
 
-        if ($account) {
-            config(['mail.mailers.dynamic' => $account->mailerConfig()]);
-            Mail::mailer('dynamic')->to($email)->send($mail);
-        } else {
-            Mail::to($email)->send($mail);
+        try {
+            if ($account) {
+                config(['mail.mailers.dynamic' => $account->mailerConfig()]);
+                Mail::mailer('dynamic')->to($email)->send($mail);
+            } else {
+                Mail::to($email)->send($mail);
+            }
+
+            ActivityLog::record('test-email.send', request(), [
+                'to' => $email, 'template_id' => $template->id, 'via' => $via, 'status' => 'sent',
+            ]);
+
+            flash()->success("Test email sent to {$email} via {$via}.");
+        } catch (\Throwable $e) {
+            ActivityLog::record('test-email.send', request(), [
+                'to' => $email, 'template_id' => $template->id, 'via' => $via, 'status' => 'failed',
+                'error' => substr($e->getMessage(), 0, 500),
+            ]);
+
+            flash()->error("Test email to {$email} failed: ".substr($e->getMessage(), 0, 200));
         }
-
-        ActivityLog::record('test-email.send', request(), ['to' => $email, 'template_id' => $template->id, 'via' => $via]);
-
-        flash()->success("Test email sent to {$email} via {$via}.");
     }
 
     public function render()

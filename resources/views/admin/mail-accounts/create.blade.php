@@ -39,26 +39,33 @@
                 @error('app_password')<p class="field-err-msg">{{ $message }}</p>@enderror
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label class="field-label">SMTP Host</label>
-                    <input type="text" id="smtp_host" name="smtp_host" value="{{ old('smtp_host', 'smtp.gmail.com') }}" required class="field-input @error('smtp_host') field-error @enderror">
-                    @error('smtp_host')<p class="field-err-msg">{{ $message }}</p>@enderror
+            @php
+                $knownHosts = ['smtp.gmail.com', 'smtp.mgovcloud.in'];
+                $showSmtpAdvanced = $errors->has('smtp_host') || $errors->has('smtp_port')
+                    || (old('smtp_host') && ! in_array(old('smtp_host'), $knownHosts, true));
+            @endphp
+            <div id="smtp-advanced" class="{{ $showSmtpAdvanced ? '' : 'hidden' }} space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="field-label">SMTP Host</label>
+                        <input type="text" id="smtp_host" name="smtp_host" value="{{ old('smtp_host', 'smtp.gmail.com') }}" class="field-input @error('smtp_host') field-error @enderror">
+                        @error('smtp_host')<p class="field-err-msg">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label class="field-label">Connection Security</label>
+                        <select id="auth_mode" class="field-input">
+                            <option value="tls">TLS (port 587)</option>
+                            <option value="ssl">SSL (port 465)</option>
+                        </select>
+                    </div>
                 </div>
-                <div>
-                    <label class="field-label">Connection Security</label>
-                    <select id="auth_mode" class="field-input">
-                        <option value="tls">TLS (port 587)</option>
-                        <option value="ssl">SSL (port 465)</option>
-                    </select>
-                </div>
-            </div>
 
-            <div>
-                <label class="field-label">SMTP Port</label>
-                <input type="number" id="smtp_port" name="smtp_port" value="{{ old('smtp_port', 587) }}" required class="field-input @error('smtp_port') field-error @enderror">
-                <p class="field-hint">Filled in automatically from Connection Security above — only change it if your provider uses a different port.</p>
-                @error('smtp_port')<p class="field-err-msg">{{ $message }}</p>@enderror
+                <div>
+                    <label class="field-label">SMTP Port</label>
+                    <input type="number" id="smtp_port" name="smtp_port" value="{{ old('smtp_port', 587) }}" class="field-input @error('smtp_port') field-error @enderror">
+                    <p class="field-hint">Filled in automatically from Connection Security above — only change it if your provider uses a different port.</p>
+                    @error('smtp_port')<p class="field-err-msg">{{ $message }}</p>@enderror
+                </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -117,6 +124,9 @@
                 document.getElementById('smtp_host').value = preset.host;
                 document.getElementById('smtp_port').value = preset.port;
                 document.getElementById('auth_mode').value = preset.port === 465 ? 'ssl' : 'tls';
+                // Gmail and NIC's SMTP settings are well-documented and already filled in above —
+                // only Custom SMTP needs the admin to see/edit them directly.
+                document.getElementById('smtp-advanced').classList.toggle('hidden', this.value !== 'custom');
             });
 
             document.getElementById('auth_mode')?.addEventListener('change', function () {

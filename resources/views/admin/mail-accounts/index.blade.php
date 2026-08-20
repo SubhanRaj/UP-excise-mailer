@@ -37,12 +37,18 @@
                         </td>
                         <td class="px-4 py-3 text-right">
                             <div class="flex items-center justify-end gap-2">
+                                @if(auth()->user()->hasPrivilege('test-email.send'))
+                                <a href="{{ route('campaigns.test-send', ['mailAccountId' => $account->id]) }}" wire:navigate
+                                   class="text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors" title="Send Test Email">
+                                    <i class="ti ti-flask text-base"></i>
+                                </a>
+                                @endif
                                 <a href="{{ route('admin.mail-accounts.edit', $account) }}" wire:navigate
                                    class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="Edit">
                                     <i class="ti ti-pencil text-base"></i>
                                 </a>
                                 <form method="POST" action="{{ route('admin.mail-accounts.destroy', $account) }}"
-                                      onsubmit="return confirm('Delete this mail account?');">
+                                      data-confirm="Delete this mail account?">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Delete">

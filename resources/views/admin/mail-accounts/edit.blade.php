@@ -47,26 +47,31 @@
                 @error('app_password')<p class="field-err-msg">{{ $message }}</p>@enderror
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label class="field-label">SMTP Host</label>
-                    <input type="text" id="smtp_host" name="smtp_host" value="{{ old('smtp_host', $mailAccount->smtp_host) }}" required class="field-input @error('smtp_host') field-error @enderror">
-                    @error('smtp_host')<p class="field-err-msg">{{ $message }}</p>@enderror
+            @php
+                $showSmtpAdvanced = $currentProvider === 'custom' || $errors->has('smtp_host') || $errors->has('smtp_port');
+            @endphp
+            <div id="smtp-advanced" class="{{ $showSmtpAdvanced ? '' : 'hidden' }} space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="field-label">SMTP Host</label>
+                        <input type="text" id="smtp_host" name="smtp_host" value="{{ old('smtp_host', $mailAccount->smtp_host) }}" class="field-input @error('smtp_host') field-error @enderror">
+                        @error('smtp_host')<p class="field-err-msg">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label class="field-label">Connection Security</label>
+                        <select id="auth_mode" class="field-input">
+                            <option value="tls" {{ (int) old('smtp_port', $mailAccount->smtp_port) !== 465 ? 'selected' : '' }}>TLS (port 587)</option>
+                            <option value="ssl" {{ (int) old('smtp_port', $mailAccount->smtp_port) === 465 ? 'selected' : '' }}>SSL (port 465)</option>
+                        </select>
+                    </div>
                 </div>
-                <div>
-                    <label class="field-label">Connection Security</label>
-                    <select id="auth_mode" class="field-input">
-                        <option value="tls" {{ (int) old('smtp_port', $mailAccount->smtp_port) !== 465 ? 'selected' : '' }}>TLS (port 587)</option>
-                        <option value="ssl" {{ (int) old('smtp_port', $mailAccount->smtp_port) === 465 ? 'selected' : '' }}>SSL (port 465)</option>
-                    </select>
-                </div>
-            </div>
 
-            <div>
-                <label class="field-label">SMTP Port</label>
-                <input type="number" id="smtp_port" name="smtp_port" value="{{ old('smtp_port', $mailAccount->smtp_port) }}" required class="field-input @error('smtp_port') field-error @enderror">
-                <p class="field-hint">Filled in automatically from Connection Security above — only change it if your provider uses a different port.</p>
-                @error('smtp_port')<p class="field-err-msg">{{ $message }}</p>@enderror
+                <div>
+                    <label class="field-label">SMTP Port</label>
+                    <input type="number" id="smtp_port" name="smtp_port" value="{{ old('smtp_port', $mailAccount->smtp_port) }}" class="field-input @error('smtp_port') field-error @enderror">
+                    <p class="field-hint">Filled in automatically from Connection Security above — only change it if your provider uses a different port.</p>
+                    @error('smtp_port')<p class="field-err-msg">{{ $message }}</p>@enderror
+                </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -113,6 +118,7 @@
                 document.getElementById('smtp_host').value = preset.host;
                 document.getElementById('smtp_port').value = preset.port;
                 document.getElementById('auth_mode').value = preset.port === 465 ? 'ssl' : 'tls';
+                document.getElementById('smtp-advanced').classList.toggle('hidden', this.value !== 'custom');
             });
 
             document.getElementById('auth_mode')?.addEventListener('change', function () {
