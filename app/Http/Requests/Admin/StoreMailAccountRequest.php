@@ -8,7 +8,7 @@ class StoreMailAccountRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->isAdmin() ?? false;
+        return $this->user()?->hasPrivilege('mail-accounts.manage') ?? false;
     }
 
     public function rules(): array

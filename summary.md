@@ -618,6 +618,74 @@ mean duplicating the whole handler a third time.
   derives it: `$this->smtp_port === 465 ? 'ssl' : 'tls'`. Verified both
   branches directly against `mailerConfig()`'s output.
 
+### Fixed: the privileges checkboxes for Sections/Mail Accounts/Designations/Users did nothing (2026-08-20, done)
+
+User granted a Task Force (IT/tech section) user the "Manage Sections"
+privilege and found no Sections nav item or access after login —
+correctly suspected the checkbox wasn't actually wired to anything,
+rather than reaching for "just make them SuperAdmin" as a workaround.
+Confirmed: `sections.manage`, `mail-accounts.manage`, and `users.manage`
+already existed as checkable privileges (`User::PRIVILEGES`,
+`admin/_privilege_checkboxes.blade.php`) and even had a working
+`HasPrivilege` middleware — but the actual routes for all four admin
+resources (`routes/web.php`'s sections/mail-accounts/designations/users
+group) were hardcoded to the blanket `is_admin` (SuperAdmin-only)
+middleware, and all 8 of their `Store*/Update*Request::authorize()`
+methods hardcoded `isAdmin()` too — so the privilege checkbox was
+checked, saved to the DB, and then ignored by every layer that mattered.
+The sidebar had the same bug (`@if(isAdmin())` wrapping all four nav
+links). Fixed root-to-leaf for all four resources:
+- Routes: swapped `is_admin` for `privilege:sections.manage` /
+  `mail-accounts.manage` / `designations.manage` / `users.manage`
+  (`privilege:` middleware already treats SuperAdmin as holding every
+  privilege via `User::hasPrivilege()`, so this is a strict widening,
+  not a behavior change for existing SuperAdmins).
+- All 8 FormRequests' `authorize()`: `isAdmin()` → `hasPrivilege('...')`.
+- Sidebar: each of the four "Manage" nav links now checks its own
+  `hasPrivilege()` individually instead of one shared admin-only block.
+- Added `designations.manage` as a privilege (it existed as an admin
+  resource but had no corresponding privilege key at all before this).
+- **Privilege-escalation guard**, since `users.manage` alone is now
+  reachable by a non-SuperAdmin: `Store/UpdateUserRequest` now restrict
+  the `role` dropdown to Admin/User only (never SuperAdmin) and
+  `privileges.*` to a subset of the *actor's own* privileges — a
+  `users.manage` holder can't grant a privilege they don't have, and
+  can't promote anyone to SuperAdmin. `UpdateUserRequest::authorize()`
+  and `UserManagementController::edit/update/destroy/resendActivation`
+  also now refuse to touch an existing SuperAdmin account unless the
+  actor is one too — otherwise a users.manage grant would be a path to
+  demoting/locking out the actual SuperAdmins. Forms hide the
+  SuperAdmin role option and ungrantable privilege checkboxes for
+  non-SuperAdmin actors, and the Users list hides Edit/Deactivate for
+  SuperAdmin rows to a non-SuperAdmin viewer, so the UI never offers an
+  action that would just 403.
+- **Found and fixed a second, unrelated pre-existing bug while writing
+  the end-to-end test for this**: `Store/UpdateSectionRequest` and
+  `Store/UpdateDesignationRequest` compute `slug` in
+  `prepareForValidation()` but never declared it in `rules()` — so
+  `$request->validated()` silently dropped it, and
+  `Section::create()`/`Designation::create()` crashed with a `NOT NULL
+  constraint failed: sections.slug` on every real creation through the
+  web form (the seeder's direct `Section::firstOrCreate()` calls never
+  hit this path, which is why it went unnoticed). Added `'slug' =>
+  ['required', 'string', 'max:160']` to all four requests' `rules()`.
+- Verified end-to-end with a throwaway Feature test (written, run,
+  deleted per this project's convention): a `sections.manage`-only User
+  can create a section; a `designations.manage`-only User can create a
+  designation; a privilege-less User gets 403 on the same routes; a
+  `users.manage`-only User gets a validation error trying to grant
+  SuperAdmin role or a privilege they don't hold; and gets 403 trying to
+  edit an existing SuperAdmin. 6/6 passed.
+
+**For the live Task Force account**: their user row currently has
+`role = SuperAdmin` (looks like a manual workaround was already
+applied) — worth reverting to `role = User` (or `Admin`, which behaves
+identically except cosmetically — only the literal `SuperAdmin` string
+bypasses privilege checks) now that the privilege checkboxes actually
+work, so they get exactly Sections access rather than blanket admin
+access to every section's mail accounts, all campaigns, and user
+management.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a

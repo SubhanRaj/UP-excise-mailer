@@ -51,6 +51,7 @@
                         </td>
                         <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $user->created_at->format('d M Y') }}</td>
                         <td class="px-4 py-3 text-right">
+                            @if(auth()->user()->isAdmin() || $user->role !== 'SuperAdmin')
                             <div class="flex items-center justify-end gap-2">
                                 <a href="{{ route('admin.users.edit', $user) }}" wire:navigate
                                    class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="Edit">
@@ -67,6 +68,9 @@
                                 </form>
                                 @endif
                             </div>
+                            @else
+                            <span class="text-xs text-slate-300 dark:text-slate-600">—</span>
+                            @endif
                         </td>
                     </tr>
                     @empty
