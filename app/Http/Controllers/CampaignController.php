@@ -6,7 +6,9 @@ use App\Jobs\SendCampaignRecipientMail;
 use App\Models\ActivityLog;
 use App\Models\Campaign;
 use App\Models\CampaignRecipient;
+use App\Models\MailAccount;
 use App\Models\MailTemplate;
+use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -50,6 +52,23 @@ class CampaignController extends Controller
             ->get();
 
         return view('campaigns.sent-mail', ['sent' => $sent, 'testSends' => $testSends]);
+    }
+
+    /**
+     * "Send Test" on a Mail Accounts row — stashes the account ID in session (one-time,
+     * consumed by TestEmailSender::mount()) and redirects to the plain /campaigns/test-send
+     * URL, so the ID never appears in a query string, browser history, or server access log.
+     */
+    public function prefillTestSend(Request $request): RedirectResponse
+    {
+        $request->validate(['mail_account_id' => 'required|integer|exists:mail_accounts,id']);
+
+        $account = MailAccount::findOrFail($request->integer('mail_account_id'));
+        abort_unless($request->user()->canUseMailAccount($account), 403);
+
+        session(['test_send_mail_account_id' => $account->id]);
+
+        return redirect()->route('campaigns.test-send');
     }
 
     public function retryRecipient(Campaign $campaign, CampaignRecipient $recipient): RedirectResponse
