@@ -62,18 +62,6 @@ document.addEventListener('submit', function (e) {
     });
 });
 
-// A Livewire action that doesn't redirect anywhere (e.g. Send Test Email) has no page load
-// for php-flasher's server-rendered toast to appear on — components dispatch a "toast"
-// browser event instead, shown here as a SweetAlert2 toast.
-document.addEventListener('livewire:init', function () {
-    Livewire.on('toast', function (data) {
-        Swal.fire({
-            toast: true, position: 'top-end', timer: 4000, timerProgressBar: true,
-            showConfirmButton: false, icon: data.type, title: data.message,
-        });
-    });
-});
-
 window.toggleDarkMode = function () {
     const isDark = document.documentElement.classList.toggle('dark');
     localStorage.setItem('color_scheme', isDark ? 'dark' : 'light');

@@ -924,6 +924,53 @@ Three real issues from one round of user testing:
    sensitive/exploitable IDs, just a page number, which is the
    distinction the user actually drew.
 
+### Fixed two self-inflicted script bugs, and found php-flasher's real Livewire support (2026-08-20, done)
+
+**The `livewire:navigated`-wrapping "fix" from earlier this session was
+itself the bug** — user reported the Templates editor kept stacking a
+new Quill instance on every "Add Template" visit, with none at all on
+the very first visit. Root cause, confirmed directly against
+`vendor/livewire/livewire/dist/livewire.js`: `livewire:navigated` (an
+alias of Alpine's `alpine:navigated`) fires **only on SPA-style
+`wire:navigate` transitions, never on a genuine first/hard page load**
+— so wrapping a page-specific init script in
+`document.addEventListener('livewire:navigated', fn)` meant it never
+ran on first arrival, and because the wrapping script itself
+re-executes on every visit (Livewire clones and re-inserts body
+`<script>` tags on each navigation — confirmed via
+`prepNewBodyScriptTagsToRun()`), each return visit registered *another*
+listener, so the Nth visit fired N-1 stacked copies of the init logic.
+The actual fix needed was never the event wrapper — it was avoiding a
+top-level `const`/`let` redeclaration crash (the real, narrower bug
+from earlier), which only needs a plain IIFE. Reverted the
+`livewire:navigated` wrapper back to a direct IIFE (or a plain
+top-level call, where there was no `const` at all) in all 5 places it
+had been wrongly applied: `templates/_editor.blade.php` (Quill),
+`admin/mail-accounts/create.blade.php` + `edit.blade.php`
+(provider-switch), `admin/users/create.blade.php` + `edit.blade.php`
+(designation-privilege autofill).
+
+**Also removed the custom SweetAlert2-toast workaround** built earlier
+this session for "no toast after Send Test Email" — user pointed at
+php-flasher's own Livewire docs (php-flasher.io/livewire/), which
+turned out to be completely accurate: `flasher-laravel` already ships a
+real `LivewireListener` hooked into Livewire's `dehydrate` cycle
+(`vendor/php-flasher/flasher-laravel/EventListener/LivewireListener.php`)
+that automatically dispatches queued `flash()` notifications as a
+`flasher:render` Livewire browser event — genuinely zero-config, no
+custom JS needed. The actual gap was operational, not architectural:
+**`php artisan flasher:install` had never been run**, so
+`public/vendor/flasher/` (JS/CSS/themes) never existed. Ran it now
+(committed the published assets, same pattern as
+`public/vendor/tabler-icons`). Reverted `TestEmailSender::send()` back
+to plain `flash()->success()`/`flash()->error()` and deleted the custom
+`Livewire.on('toast', ...)` SweetAlert2 listener from the layout — the
+ad-hoc toast was very likely also the source of the "looks bad, has a
+horizontal scroll" complaint, since it's now gone entirely in favor of
+php-flasher's own styled/themed toast. SweetAlert2 itself is kept for
+the delete/deactivate **confirm dialogs** only (a genuinely different
+UX need — a modal, not a toast), which is unaffected by any of this.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
