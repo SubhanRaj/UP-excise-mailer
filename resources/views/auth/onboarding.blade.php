@@ -28,11 +28,29 @@
             @csrf
             <div>
                 <label class="field-label">New password</label>
-                <input type="password" name="password" required class="field-input @error('password') field-error @enderror">
+                <div class="relative">
+                    <i class="ti ti-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-sm pointer-events-none"></i>
+                    <input id="password" type="password" name="password" required autocomplete="new-password"
+                        class="w-full pl-9 pr-10 py-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition @error('password') field-error @enderror">
+                    <button type="button" onclick="togglePassword('password', 'eye-icon-1')"
+                        class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                        title="Toggle password visibility">
+                        <i id="eye-icon-1" class="ti ti-eye text-sm"></i>
+                    </button>
+                </div>
             </div>
             <div>
                 <label class="field-label">Confirm password</label>
-                <input type="password" name="password_confirmation" required class="field-input">
+                <div class="relative">
+                    <i class="ti ti-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-sm pointer-events-none"></i>
+                    <input id="password_confirmation" type="password" name="password_confirmation" required autocomplete="new-password"
+                        class="w-full pl-9 pr-10 py-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                    <button type="button" onclick="togglePassword('password_confirmation', 'eye-icon-2')"
+                        class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                        title="Toggle password visibility">
+                        <i id="eye-icon-2" class="ti ti-eye text-sm"></i>
+                    </button>
+                </div>
             </div>
             <button type="submit"
                 class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
@@ -43,6 +61,16 @@
     </div>
 
 </div>
+
+<script>
+    function togglePassword(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        const isHidden = input.type === 'password';
+        input.type = isHidden ? 'text' : 'password';
+        icon.className = isHidden ? 'ti ti-eye-off text-sm' : 'ti ti-eye text-sm';
+    }
+</script>
 
 </body>
 </html>

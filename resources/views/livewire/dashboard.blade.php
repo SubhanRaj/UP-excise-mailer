@@ -45,7 +45,7 @@
         @if ($recentCampaigns->isEmpty())
             <div class="flex items-center gap-3 text-sm text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-700 rounded-lg px-4 py-6 justify-center">
                 <i class="ti ti-inbox text-lg"></i>
-                No campaigns yet — recipient import, templates, and campaign builder are next on the roadmap (see summary.md).
+                No campaigns sent yet.
             </div>
         @else
             <table class="w-full text-sm">

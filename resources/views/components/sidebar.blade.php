@@ -18,25 +18,25 @@
             <span class="sidebar-text">Dashboard</span>
         </a>
 
-        <a href="#" wire:navigate data-tooltip="Campaigns"
+        <a href="{{ route('campaigns.index') }}" wire:navigate data-tooltip="Campaigns"
            class="nav-link {{ request()->routeIs('campaigns.*') ? 'nav-link-active' : 'nav-link-idle' }}">
             <i class="ti ti-send w-5 text-center text-base flex-shrink-0"></i>
             <span class="sidebar-text">Campaigns</span>
         </a>
 
-        <a href="#" wire:navigate data-tooltip="Templates"
+        <a href="{{ route('templates.index') }}" wire:navigate data-tooltip="Templates"
            class="nav-link {{ request()->routeIs('templates.*') ? 'nav-link-active' : 'nav-link-idle' }}">
             <i class="ti ti-template w-5 text-center text-base flex-shrink-0"></i>
             <span class="sidebar-text">Templates</span>
         </a>
 
-        <a href="#" wire:navigate data-tooltip="Recipients"
+        <a href="{{ route('recipients.index') }}" wire:navigate data-tooltip="Recipients"
            class="nav-link {{ request()->routeIs('recipients.*') ? 'nav-link-active' : 'nav-link-idle' }}">
             <i class="ti ti-map-2 w-5 text-center text-base flex-shrink-0"></i>
             <span class="sidebar-text">Recipients</span>
         </a>
 
-        <a href="#" wire:navigate data-tooltip="Recipient Lists"
+        <a href="{{ route('recipient-lists.index') }}" wire:navigate data-tooltip="Recipient Lists"
            class="nav-link {{ request()->routeIs('recipient-lists.*') ? 'nav-link-active' : 'nav-link-idle' }}">
             <i class="ti ti-list-details w-5 text-center text-base flex-shrink-0"></i>
             <span class="sidebar-text">Recipient Lists</span>
@@ -46,25 +46,25 @@
         @if(auth()->user()->isAdmin())
         <span class="nav-section-label">Manage</span>
 
-        <a href="#" wire:navigate data-tooltip="Mail Accounts"
+        <a href="{{ route('admin.mail-accounts.index') }}" wire:navigate data-tooltip="Mail Accounts"
            class="nav-link {{ request()->routeIs('admin.mail-accounts.*') ? 'nav-link-active' : 'nav-link-idle' }}">
             <i class="ti ti-brand-gmail w-5 text-center text-base flex-shrink-0"></i>
             <span class="sidebar-text">Mail Accounts</span>
         </a>
 
-        <a href="#" wire:navigate data-tooltip="Sections"
+        <a href="{{ route('admin.sections.index') }}" wire:navigate data-tooltip="Sections"
            class="nav-link {{ request()->routeIs('admin.sections.*') ? 'nav-link-active' : 'nav-link-idle' }}">
             <i class="ti ti-building w-5 text-center text-base flex-shrink-0"></i>
             <span class="sidebar-text">Sections</span>
         </a>
 
-        <a href="#" wire:navigate data-tooltip="Users"
+        <a href="{{ route('admin.users.index') }}" wire:navigate data-tooltip="Users"
            class="nav-link {{ request()->routeIs('admin.users.*') ? 'nav-link-active' : 'nav-link-idle' }}">
             <i class="ti ti-users w-5 text-center text-base flex-shrink-0"></i>
             <span class="sidebar-text">Users</span>
         </a>
 
-        <a href="#" wire:navigate data-tooltip="Designations"
+        <a href="{{ route('admin.designations.index') }}" wire:navigate data-tooltip="Designations"
            class="nav-link {{ request()->routeIs('admin.designations.*') ? 'nav-link-active' : 'nav-link-idle' }}">
             <i class="ti ti-id-badge-2 w-5 text-center text-base flex-shrink-0"></i>
             <span class="sidebar-text">Designations</span>
@@ -72,7 +72,7 @@
         @endif
 
         @if(auth()->user()->isAdmin() || auth()->user()->hasPrivilege('activity-logs.view'))
-        <a href="#" wire:navigate data-tooltip="Activity Log"
+        <a href="{{ route('admin.activity.index') }}" wire:navigate data-tooltip="Activity Log"
            class="nav-link {{ request()->routeIs('admin.activity.*') ? 'nav-link-active' : 'nav-link-idle' }}">
             <i class="ti ti-activity w-5 text-center text-base flex-shrink-0"></i>
             <span class="sidebar-text">Activity Log</span>

@@ -76,6 +76,7 @@
         .field-input { @apply w-full px-3 py-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition; }
         .field-error { @apply !border-red-400 !bg-red-50 dark:!bg-red-950/40 focus:!ring-red-400; }
         .field-hint  { @apply text-xs text-slate-400 dark:text-slate-500 mt-1; }
+        .field-err-msg { @apply text-xs text-red-600 dark:text-red-400 mt-1; }
 
         #sidebar { transition: width 280ms cubic-bezier(0.4, 0, 0.2, 1); }
         #sidebar.sidebar-expanded  { width: 16rem; }

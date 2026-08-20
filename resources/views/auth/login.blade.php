@@ -43,7 +43,7 @@
                     <i class="ti ti-mail absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-sm pointer-events-none"></i>
                     <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus
                         autocomplete="email" placeholder="you@exciseup.in"
-                        class="field-input pl-9 @error('email') field-error @enderror">
+                        class="w-full pl-9 pr-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition @error('email') field-error @enderror">
                 </div>
             </div>
 
@@ -52,7 +52,13 @@
                 <div class="relative">
                     <i class="ti ti-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-sm pointer-events-none"></i>
                     <input id="password" name="password" type="password" required autocomplete="current-password"
-                        placeholder="••••••••" class="field-input pl-9 @error('password') field-error @enderror">
+                        placeholder="••••••••"
+                        class="w-full pl-9 pr-10 py-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition @error('password') field-error @enderror">
+                    <button type="button" onclick="togglePassword('password', 'eye-icon')"
+                        class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                        title="Toggle password visibility">
+                        <i id="eye-icon" class="ti ti-eye text-sm"></i>
+                    </button>
                 </div>
             </div>
 
@@ -74,6 +80,16 @@
     </p>
 
 </div>
+
+<script>
+    function togglePassword(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
+        const isHidden = input.type === 'password';
+        input.type = isHidden ? 'text' : 'password';
+        icon.className = isHidden ? 'ti ti-eye-off text-sm' : 'ti ti-eye text-sm';
+    }
+</script>
 
 </body>
 </html>
