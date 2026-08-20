@@ -1,9 +1,25 @@
 <div class="max-w-xl">
     <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 space-y-5">
 
-        <div class="flex items-start gap-2 text-sm text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3">
-            <i class="ti ti-flask flex-shrink-0 mt-0.5"></i>
-            <span>Sends through the system's Resend account (same as sign-in emails), not a section's Gmail — use this to check the mailer works without needing a Gmail app password set up yet.</span>
+        <div>
+            <label class="field-label">Send Via</label>
+            <div class="flex gap-2 mt-1 mb-3">
+                <button type="button" wire:click="$set('sendVia', 'system')" class="px-3 py-2 rounded-lg text-sm border {{ $sendVia === 'system' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300' }}">System (Resend)</button>
+                <button type="button" wire:click="$set('sendVia', 'mail_account')" class="px-3 py-2 rounded-lg text-sm border {{ $sendVia === 'mail_account' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300' }}">A Section's Gmail</button>
+            </div>
+
+            @if($sendVia === 'mail_account')
+            <select wire:model="mailAccountId" class="field-input @error('mailAccountId') field-error @enderror">
+                <option value="">— Select a mail account —</option>
+                @foreach($mailAccounts as $account)
+                <option value="{{ $account->id }}">{{ $account->gmail_address }} ({{ $account->section->name }})</option>
+                @endforeach
+            </select>
+            @error('mailAccountId')<p class="field-err-msg">{{ $message }}</p>@enderror
+            @if($mailAccounts->isEmpty())
+            <p class="field-hint text-amber-600 dark:text-amber-400">No mail account is set up for you yet — ask a SuperAdmin to add one under Mail Accounts.</p>
+            @endif
+            @endif
         </div>
 
         <div>
