@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Mail\CampaignMail;
+use App\Models\Campaign;
 use App\Models\CampaignRecipient;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -49,6 +50,26 @@ class SendCampaignRecipientMail implements ShouldQueue
             ]);
 
             $recipient->update(['status' => 'failed', 'error_message' => substr($e->getMessage(), 0, 500)]);
+        }
+
+        $this->markCampaignCompletedIfDone($recipient->campaign_id);
+    }
+
+    /**
+     * Nothing else in this app ever transitions Campaign::status past 'queued' — every
+     * individual recipient could be sent/failed and the campaign itself would still show
+     * "Sending" forever. Flips it to 'completed' once no recipient is left pending/queued
+     * (matches this batch's confirmed live incident where a real send delivered successfully
+     * but the campaign kept showing as stuck).
+     */
+    private function markCampaignCompletedIfDone(int $campaignId): void
+    {
+        $stillPending = CampaignRecipient::where('campaign_id', $campaignId)
+            ->whereIn('status', ['pending', 'queued'])
+            ->exists();
+
+        if (! $stillPending) {
+            Campaign::where('id', $campaignId)->update(['status' => 'completed']);
         }
     }
 }

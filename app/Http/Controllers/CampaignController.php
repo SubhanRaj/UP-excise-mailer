@@ -85,6 +85,9 @@ class CampaignController extends Controller
         }
 
         $recipient->update(['status' => 'pending', 'error_message' => null]);
+        // Otherwise the campaign would keep showing "Sent" (completed) with a recipient still
+        // pending underneath it — SendCampaignRecipientMail flips it back once this settles.
+        $campaign->update(['status' => 'queued']);
 
         SendCampaignRecipientMail::dispatch(
             $recipient->id,

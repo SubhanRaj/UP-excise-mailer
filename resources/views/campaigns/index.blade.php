@@ -39,7 +39,7 @@
                     @php
                         $scopeLabel = match($campaign->recipient_scope) {
                             'zones' => 'Zones', 'divisions' => 'Divisions', 'districts' => 'Districts',
-                            'recipient_list' => 'Imported List', default => 'Everyone',
+                            'recipient_list' => 'Imported List', 'manual' => 'Typed Emails', default => 'Everyone',
                         };
                         $statusLabel = match($campaign->status) {
                             'completed' => 'Sent', 'failed' => 'Failed', 'sending', 'queued' => 'Sending', default => 'Draft',

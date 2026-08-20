@@ -45,6 +45,8 @@ class CampaignRecipient extends Model
             'list_item' => ($item = RecipientListItem::find($this->recipient_ref_id))
                 ? array_merge(['name' => $item->name, 'email' => $item->email], $item->extra ?? [])
                 : [],
+            // No backing row to re-fetch from — a typed email's "vars" are inherently static.
+            'manual' => ['name' => $this->name, 'email' => $this->email],
             default => [],
         };
     }

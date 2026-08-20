@@ -43,6 +43,10 @@ class CampaignBuilder extends Component
 
     public string $recipientListId = '';
 
+    // Newline/comma-separated addresses typed directly instead of importing a whole list —
+    // for the "just add a couple of emails" case.
+    public string $manualEmails = '';
+
     // Step 2 — template
     public string $templateId = '';
 
@@ -363,6 +367,10 @@ class CampaignBuilder extends Component
                     'vars' => array_merge(['name' => $i->name, 'email' => $i->email], $i->extra ?? []),
                 ])
                 : collect(),
+            'manual' => $this->parsedManualEmails()->map(fn (string $email) => [
+                'type' => 'manual', 'ref_id' => null, 'name' => $email, 'email' => $email,
+                'vars' => ['name' => $email, 'email' => $email],
+            ]),
             default => collect(),
         };
 
@@ -372,6 +380,16 @@ class CampaignBuilder extends Component
     public function getRecipientCountProperty(): int
     {
         return $this->candidateRecipients()->count();
+    }
+
+    /** Splits the typed textarea on commas/newlines, trims, and drops blanks/duplicates. */
+    private function parsedManualEmails(): Collection
+    {
+        return collect(preg_split('/[,\n]+/', $this->manualEmails))
+            ->map(fn ($e) => trim($e))
+            ->filter()
+            ->unique()
+            ->values();
     }
 
     /** Variable names offered by the picker for the current scope — plain words, no underscores. */
@@ -384,6 +402,7 @@ class CampaignBuilder extends Component
             'recipient_list' => $this->recipientListId !== ''
                 ? collect($this->candidateRecipients()->first()['vars'] ?? ['name', 'email'])->keys()->all()
                 : ['name', 'email'],
+            'manual' => ['name', 'email'],
             default => [],
         };
     }

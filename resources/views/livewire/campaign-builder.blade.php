@@ -43,12 +43,13 @@
 
             <div>
                 <label class="field-label">Who Should Receive This?</label>
-                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-1">
+                <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 mt-1">
                     <button type="button" wire:click="$set('scope', 'all')" class="px-3 py-2 rounded-lg text-sm border {{ $scope === 'all' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300' }}">Everyone</button>
                     <button type="button" wire:click="$set('scope', 'zones')" class="px-3 py-2 rounded-lg text-sm border {{ $scope === 'zones' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300' }}">Zones</button>
                     <button type="button" wire:click="$set('scope', 'divisions')" class="px-3 py-2 rounded-lg text-sm border {{ $scope === 'divisions' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300' }}">Divisions</button>
                     <button type="button" wire:click="$set('scope', 'districts')" class="px-3 py-2 rounded-lg text-sm border {{ $scope === 'districts' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300' }}">Districts</button>
                     <button type="button" wire:click="$set('scope', 'recipient_list')" class="px-3 py-2 rounded-lg text-sm border {{ $scope === 'recipient_list' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300' }}">Imported List</button>
+                    <button type="button" wire:click="$set('scope', 'manual')" class="px-3 py-2 rounded-lg text-sm border {{ $scope === 'manual' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300' }}">Type Emails</button>
                 </div>
                 @error('scope')<p class="field-err-msg mt-2">{{ $message }}</p>@enderror
             </div>
@@ -108,6 +109,11 @@
                 @if($recipientLists->isEmpty())
                 <p class="field-hint">No lists imported yet — go to Recipient Lists to import one first.</p>
                 @endif
+            </div>
+            @elseif($scope === 'manual')
+            <div>
+                <textarea wire:model.live="manualEmails" rows="4" placeholder="one@example.com, another@example.com&#10;or one per line" class="field-input"></textarea>
+                <p class="field-hint">Separate addresses with a comma or a new line — no list needs to be imported first.</p>
             </div>
             @endif
 

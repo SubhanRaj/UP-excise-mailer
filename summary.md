@@ -1041,6 +1041,46 @@ per page load, so wrapping it there would mean the listener never
 with a Livewire test asserting the `quill-set-content` event dispatches
 with the template's actual body HTML.
 
+### Fixed: campaign status never left "queued" even after every recipient sent (2026-08-20, done)
+
+Same live Lucknow incident, a second real bug in it: user asked why
+Sent Mail/logs still didn't show the delivery even after the SMTP-
+timeout fix — checked the DB directly and the `campaign_recipients`
+row was already correctly `status = 'sent'` (Sent Mail's own query
+already finds it fine). The actual problem was one level up: **nothing
+anywhere in this app ever transitions `Campaign::status` past
+`'queued'`** — grepped the whole `app/` tree for any write to it, found
+none. So the Campaigns list/show pages keep showing "Sending" forever,
+even once every single recipient has a terminal status, which reads as
+"nothing happened" even though delivery genuinely succeeded. Fixed:
+`SendCampaignRecipientMail::handle()` now checks, after updating its
+own recipient's row, whether any `pending`/`queued` recipients remain
+for that campaign — if none, flips the campaign to `'completed'`.
+`CampaignController::retryRecipient()` correspondingly resets the
+campaign back to `'queued'` when retrying a failed recipient, so it
+doesn't keep reading "Sent" while one row is mid-retry underneath it.
+Applied retroactively to the live "Test" campaign (id 1) so it stopped
+showing stale. Verified with a Feature test: a recipient's job
+completing correctly flips its solo-recipient campaign to `completed`.
+
+### Manual "type email addresses" recipient scope (2026-08-20, done)
+
+User: adding one or two ad-hoc recipients shouldn't require importing
+a whole Recipient List first. Added **Type Emails** as a sixth
+`recipient_scope` option in the campaign builder — a plain textarea,
+comma- or newline-separated, parsed/deduped/validated the same way
+every other scope already is (`candidateRecipients()`'s existing
+`FILTER_VALIDATE_EMAIL` filter at the end catches anything malformed).
+Recipients get `recipient_type = 'manual'`, `recipient_ref_id = null`
+— there's no backing zone/division/district/list row to point at, so
+`CampaignRecipient::resolveVars()` (used by retry) just returns the
+static `name`/`email` already stored on the row for that type, since
+there's nothing external to re-fetch from. Available merge variables
+for this scope are `name`/`email`, matching the Imported List scope's
+un-mapped case. Verified with a Feature test parsing a mixed comma/
+newline/duplicate-containing input down to the correct 3 unique
+addresses.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
