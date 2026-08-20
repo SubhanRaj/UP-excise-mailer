@@ -9,6 +9,7 @@
         'campaigns.send' => 'Send Campaigns',
         'recipients.import' => 'Import Recipients',
         'activity-logs.view' => 'View Activity Logs',
+        'test-email.send' => 'Send Test Email',
     ];
 
     // A non-SuperAdmin can only grant privileges they themselves hold — matches the server-side

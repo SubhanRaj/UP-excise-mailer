@@ -13,9 +13,12 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 /**
- * SuperAdmin-only sanity check: sends a template either through Resend (system sender) or
- * through any mail account the user is allowed to use, so each Gmail account can be tested
- * too. Not a Campaign — no campaigns/campaign_recipients rows, just a direct one-off send.
+ * Sends a template either through Resend (system sender, SuperAdmin-only — it's the shared
+ * app-login sender, not something a section should be testing with) or through any mail
+ * account the user is allowed to use, so each section's Gmail/NIC account can be tested too.
+ * Reachable by anyone with the test-email.send privilege, not just SuperAdmin — a section's
+ * own tech-support user can verify their own mail account works without needing full admin
+ * access. Not a Campaign — no campaigns/campaign_recipients rows, just a direct one-off send.
  */
 #[Layout('components.layout', ['pageTitle' => 'Send Test Email'])]
 class TestEmailSender extends Component
@@ -34,14 +37,19 @@ class TestEmailSender extends Component
 
     public function mount(): void
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        abort_unless(auth()->user()->hasPrivilege('test-email.send'), 403);
 
+        $this->sendVia = auth()->user()->isAdmin() ? 'system' : 'mail_account';
         $this->templateId = (string) (MailTemplate::where('name', 'Test Email — Do Not Action')->value('id') ?? '');
     }
 
     public function send(): void
     {
-        abort_unless(auth()->user()->isAdmin(), 403);
+        $user = auth()->user();
+        abort_unless($user->hasPrivilege('test-email.send'), 403);
+        // Resend is the shared system sender (also used for login OTP/invites) — reserved for
+        // SuperAdmin so a section's test-send privilege can't be used to probe/abuse it.
+        abort_if($this->sendVia === 'system' && ! $user->isAdmin(), 403);
 
         $this->validate([
             'templateId' => 'required|exists:mail_templates,id',

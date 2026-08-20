@@ -96,11 +96,13 @@
     </div>
 
     <script>
-        document.getElementById('designation_id')?.addEventListener('change', function () {
-            const opt = this.options[this.selectedIndex];
-            const privileges = JSON.parse(opt.dataset.privileges || '[]');
-            document.querySelectorAll('#privileges-grid input[type="checkbox"]').forEach(function (cb) {
-                cb.checked = privileges.includes(cb.value);
+        document.addEventListener('livewire:navigated', function () {
+            document.getElementById('designation_id')?.addEventListener('change', function () {
+                const opt = this.options[this.selectedIndex];
+                const privileges = JSON.parse(opt.dataset.privileges || '[]');
+                document.querySelectorAll('#privileges-grid input[type="checkbox"]').forEach(function (cb) {
+                    cb.checked = privileges.includes(cb.value);
+                });
             });
         });
     </script>

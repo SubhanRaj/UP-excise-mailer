@@ -3,10 +3,12 @@
 
         <div>
             <label class="field-label">Send Via</label>
+            @if(auth()->user()->isAdmin())
             <div class="flex gap-2 mt-1 mb-3">
                 <button type="button" wire:click="$set('sendVia', 'system')" class="px-3 py-2 rounded-lg text-sm border {{ $sendVia === 'system' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300' }}">System (Resend)</button>
-                <button type="button" wire:click="$set('sendVia', 'mail_account')" class="px-3 py-2 rounded-lg text-sm border {{ $sendVia === 'mail_account' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300' }}">A Section's Gmail</button>
+                <button type="button" wire:click="$set('sendVia', 'mail_account')" class="px-3 py-2 rounded-lg text-sm border {{ $sendVia === 'mail_account' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300' }}">A Mail Account</button>
             </div>
+            @endif
 
             @if($sendVia === 'mail_account')
             <select wire:model="mailAccountId" class="field-input @error('mailAccountId') field-error @enderror">

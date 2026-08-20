@@ -9,7 +9,7 @@
                 <i class="ti ti-mail-check text-base"></i>
                 <span>Sent Mail</span>
             </a>
-            @if(auth()->user()->isAdmin())
+            @if(auth()->user()->hasPrivilege('test-email.send'))
             <a href="{{ route('campaigns.test-send') }}" wire:navigate
                class="inline-flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-medium px-3 sm:px-4 py-2 rounded-lg transition-colors">
                 <i class="ti ti-flask text-base"></i>

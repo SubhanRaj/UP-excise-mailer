@@ -686,6 +686,51 @@ work, so they get exactly Sections access rather than blanket admin
 access to every section's mail accounts, all campaigns, and user
 management.
 
+### Fixed: mail-account Provider switch broke on a repeat page visit (2026-08-20, done)
+
+User picked "NIC Email (mGovCloud)" and the address label kept saying
+"Gmail Address" and the SMTP Host/Port fields didn't update. Root cause
+was **not** what it looked like at first (Livewire's `wire:navigate`
+page swap actually does re-run inline `<script>` tags on every visit —
+verified directly against `vendor/livewire/livewire/dist/livewire.js`'s
+`prepNewBodyScriptTagsToRun()`, which clones and re-inserts every body
+`<script>` tag on each swap unless marked `data-navigate-once`). The
+real bug: `const mailProviderPresets = {...}` was declared at the
+script's top level in both Add/Edit Mail Account — fine on the *first*
+visit, but a `SyntaxError: Identifier has already been declared` on any
+*second* visit to the same page in one browser session (re-running the
+same top-level `const` in the same global scope), which silently kills
+the entire script block, including the `change` listener — so the
+symptom only appears after you've already been on the page once before,
+which is exactly the normal flow (visit once during setup, come back to
+add another account). Fixed by moving the `const` inside the
+`change`-listener setup (a fresh function scope every execution, no
+redeclaration). Also added the SSL/TLS port hint the NIC docs describe
+("587 for TLS, or 465 for SSL") next to the SMTP Port field on both
+pages. **Found and fixed the identical bug pattern** in
+`admin/users/create.blade.php`'s and `edit.blade.php`'s designation→
+privilege-autofill script (same top-level-redeclaration risk, same
+"only breaks on a repeat visit" symptom) and defensively guarded
+`templates/_editor.blade.php`'s Quill init (already IIFE-scoped so not
+actually at risk, but wrapped for consistency and a null-check on the
+editor element).
+
+### Task Force can now send test emails through their own mail account (2026-08-20, done)
+
+New `test-email.send` privilege (added to `User::PRIVILEGES` and the
+checkboxes) — previously Send Test Email was hardcoded SuperAdmin-only.
+A privilege holder can reach `/campaigns/test-send`, but the page never
+shows them the "System (Resend)" option at all — that's reserved for
+SuperAdmin, since Resend is the same shared sender used for login
+OTP/invites, not something a section should be probing. A non-SuperAdmin
+always sends through a real `mail_account`, already scoped to their own
+section by the existing `canUseMailAccount()`/`mailAccounts` query (no
+change needed there). Enforced server-side too, not just hidden in the
+UI: `TestEmailSender::send()` aborts 403 if a non-SuperAdmin's `sendVia`
+is somehow `system`. Verified: a `test-email.send`-only User can send via
+their section's mail account and gets 403 attempting `sendVia=system`; a
+privilege-less User gets 403 on the route entirely.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
