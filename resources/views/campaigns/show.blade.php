@@ -66,7 +66,8 @@
                         <td class="px-4 py-3 text-slate-400 dark:text-slate-500">{{ $recipient->sent_at?->format('d M Y, H:i') ?? '—' }}</td>
                         <td class="px-4 py-3 text-right">
                             @if($recipient->status === 'failed' && auth()->user()->hasPrivilege('campaigns.send'))
-                            <form method="POST" action="{{ route('campaigns.retry-recipient', [$campaign, $recipient]) }}">
+                            <form method="POST" action="{{ route('campaigns.retry-recipient', [$campaign, $recipient]) }}"
+                                  data-confirm="Resend to {{ $recipient->email }}?">
                                 @csrf
                                 <button type="submit" class="text-indigo-600 dark:text-indigo-400 hover:underline">Retry</button>
                             </form>

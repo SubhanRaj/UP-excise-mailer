@@ -5,6 +5,20 @@ on the same Ubuntu AIO box as `~/Sites/excise-budget-tracker` and
 `~/Sites/pdf-markdown-pipeline`. There is no CI/CD and no cloud provider — this doc is the
 source of truth for what's actually running in production right now.
 
+## Known issue right now (2026-08-20)
+
+`taskupexcise@up.gov.in` (Task Force section's mGovCloud/Zoho mail account) is
+**hard-blocked by Zoho** — `554 5.1.8 Sender Address Blocked` — after a burst of
+sends near the end of a 75-recipient campaign tripped their anti-abuse system
+(`550 5.4.6 Unusual sending activity detected` on the last 7 recipients, then
+escalated to the account-level block on any further attempt, confirmed via
+bounce notices in mGovCloud Workspace). This is entirely Zoho/NIC-side, not an
+app bug — see `summary.md`'s 2026-08-20 "Live incident" entry. Don't retry
+sends from this account until the block is confirmed lifted (user is following
+up with the DA admin + NIC directly). Once lifted, and once NIC confirms a
+higher-volume allowance, raise that account's `throttle_seconds` /
+`daily_send_cap` in Admin → Mail Accounts to match.
+
 ## Current production state (2026-08-20)
 
 | Component | State |

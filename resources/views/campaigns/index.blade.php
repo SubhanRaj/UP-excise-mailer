@@ -59,7 +59,13 @@
                         <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $scopeLabel }}</td>
                         <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $campaign->recipients_count }}</td>
                         <td class="px-4 py-3">
-                            <span class="badge {{ $statusColor }}">{{ $statusLabel }}</span>
+                            <span class="badge {{ $statusColor }}">
+                                @if(in_array($campaign->status, ['sending', 'queued']))
+                                    Sent {{ $campaign->sent_count }} of {{ $campaign->recipients_count }}
+                                @else
+                                    {{ $statusLabel }}
+                                @endif
+                            </span>
                         </td>
                         <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $campaign->created_at->format('d M Y') }}</td>
                     </tr>
