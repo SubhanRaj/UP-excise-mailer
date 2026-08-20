@@ -339,6 +339,104 @@ deliberately-unedited template for sanity-check sends). Both use the
 exist next time this app is touched — they weren't part of this session's
 own work but now live in the same `mail_templates` table.
 
+### "Everyone" scope, security audit, officer-name cleanup, XLSX bulk import (2026-08-20, done)
+
+- **"Everyone" scope fix**: `scope = 'all'` previously meant "every district"
+  only — wrong, per the user: it should mean every zone, division, *and*
+  district officer combined (98 = 5 + 18 + 75 in the seeded data). Fixed in
+  `CampaignBuilder::candidateRecipients()` (concatenates all three levels)
+  and the info-box copy no longer says "district's officer."
+- **Security audit, prompted by a direct question ("is the app secure?")**
+  — not just reassurance, two real fixes:
+  - `/templates/create` and `/templates/{id}/edit` (GET) had **no privilege
+    check** — any authenticated user could view them; only the POST/PUT
+    save was blocked (via `StoreMailTemplateRequest::authorize()`). Fixed
+    by moving `create`/`store`/`edit`/`update`/`destroy` under
+    `privilege:templates.manage` route middleware, same as every other
+    admin-CRUD route group — `index` alone stays open to all authenticated
+    users (needed for the campaign builder's template picker).
+  - `CampaignBuilder`'s zip-attachment match-override `<select>` is
+    `wire:model`-bound, and Livewire does **not** validate that a submitted
+    value matches one of the rendered `<option>`s — a tampered payload
+    could set an arbitrary string that gets concatenated into a
+    `Storage::disk('local')` path. Flysystem's local adapter already
+    rejects `..` traversal by default, so this likely wasn't exploitable
+    end-to-end, but added an explicit server-side check
+    (`in_array($override, $this->zipExtractedFiles, true)`) in
+    `confirmAndQueue()` as defense-in-depth anyway — the value should never
+    have been trusted regardless of what Flysystem does.
+  - **Soft deletes added** to `Section`, `MailAccount`, `MailTemplate`,
+    `Campaign`, `RecipientList` (migration
+    `2026_08_20_000114_add_soft_deletes_to_reference_tables.php` +
+    `use SoftDeletes;` on each model) — these are the "reference/record
+    data" tier in `~/Sites/excise-budget-tracker`'s own convention
+    (BudgetHead, Scheme, Letter, Designation, User all soft-delete there;
+    Zone/Division/District and pure join/detail/log tables don't). Only
+    `Designation`/`User` had it here before; the other five were a real
+    gap against that established pattern. `destroy()` methods needed zero
+    code changes — Eloquent's `->delete()` becomes a soft delete
+    transparently once the trait is present. Verified via tinker
+    (soft-deleted row invisible to normal queries, recoverable via
+    `withTrashed()`).
+- **Officer-name cleanup + terminology fix**, both flagged directly by the
+  user:
+  - The seeded `jc_name`/`dc_name`/`deo_name` values (from
+    excise-budget-tracker's JSON export) are stale — officers rotate
+    postings — and were in Hindi, which doesn't round-trip cleanly through
+    `{{officer}}`. Migration
+    `2026_08_20_000115_clear_stale_officer_names.php` nulls all three
+    columns (email/CUG untouched — only the name was flagged as
+    unreliable).
+  - Corrected terminology: AEC (Assistant Excise Commissioner) is the
+    *cadre*; DEO (District Excise Officer) is the *post* held at a
+    district posting. Every "AEC (DEO)" label became plain **DEO**
+    (`/recipients` table headers, the district edit form). Zone stays JEC,
+    Division stays DEC — unchanged, already correct.
+  - Added `Zone::officerDisplayName()` / `Division::officerDisplayName()`
+    / `District::officerDisplayName()` — returns the real name if set,
+    else a placeholder like `"DEO - Agra"` / `"JEC - Lucknow Zone"`. Used
+    everywhere an officer name is shown or merged into a campaign
+    (`/recipients` table — shown in italic grey when it's a placeholder —
+    and `CampaignBuilder::candidateRecipients()`'s `name`/`officer`
+    fields), so a blank name never sends as a literal blank in an email
+    and the UI never claims a name is on file when it isn't.
+- **XLSX bulk import for the officer directory** (Zone/Division/District
+  JEC/DEC/DEO name/email/CUG — separate from the ad-hoc `recipient_lists`
+  import wizard, which creates new campaign-only lists rather than
+  updating the fixed 5/18/75 org directory):
+  - `RecipientController::downloadTemplate($level)` streams a pre-filled
+    XLSX (`response()->streamDownload()` + `openspout`'s `Writer::openToFile('php://output')`
+    — `Writer::openToBrowser()` sets its own headers, which would have
+    doubled up with `streamDownload()`'s, so this uses the header-agnostic
+    `openToFile()` form instead) — Name column pre-filled for every
+    zone/division/district at that level, officer columns pre-filled with
+    whatever's currently on file, so re-uploading only requires editing
+    what actually changed.
+  - `App\Livewire\OfficerDirectoryImportWizard` (2 steps: upload → preview
+    table with a per-row "Will update" / "No match — skipped" status →
+    confirm) reuses `RecipientImportParser` (already installed for the
+    recipient-list wizard; the fixed template column order means no
+    column-mapping step is needed here, unlike that wizard). **Never
+    creates new zones/divisions/districts** — matches existing rows by
+    name only, and a blank cell in the upload leaves the existing value
+    alone rather than blanking it out, so a sheet only needs to carry
+    what changed. `openspout` already supports XLSX read *and* write
+    (confirmed via its `Writer\XLSX\Writer` — matches the ladder: reuse an
+    already-installed dependency rather than adding
+    `phpoffice/phpspreadsheet`, which is what the user's other reference
+    project actually uses, but in Node/`exceljs`, not PHP).
+  - Verified with a real round-trip Feature test: hit the template-download
+    route for real bytes, built a matching upload file with those exact
+    columns via `openspout`'s own writer, ran it through the Livewire
+    component, and asserted the target `District` row's `deo_name`/
+    `deo_email`/`deo_cug` actually changed in the DB — not just that the
+    component didn't throw.
+- `README.md`/`CLAUDE.md` updated (`post` field, Quill, current build
+  status) and this repo is now public:
+  **https://github.com/SubhanRaj/UP-excise-mailer** — confirmed `.env`
+  was gitignored and never tracked before pushing, no other secret files
+  staged.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a

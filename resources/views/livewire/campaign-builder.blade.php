@@ -50,7 +50,7 @@
             @if($scope === 'all')
             <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3">
                 <i class="ti ti-world flex-shrink-0"></i>
-                Every district's officer, department-wide — no picking needed.
+                Everyone who already has an email on file — every zone, division, and district officer. No picking needed.
             </div>
             @elseif($scope === 'zones')
             <div class="border border-slate-200 dark:border-slate-700 rounded-lg p-3 max-h-64 overflow-y-auto">
@@ -149,6 +149,9 @@
                     @endforeach
                 </div>
                 <p class="field-hint">Click a word to add it to the Subject — it also drops into the message wherever your cursor is. Each one is swapped for the real value when the email is sent.</p>
+                @if($scope === 'all')
+                <p class="field-hint">"Everyone" mixes zone, division, and district officers — a zone officer has no district, for example, so avoid words that don't apply to everyone you're sending to.</p>
+                @endif
             </div>
             @endif
 

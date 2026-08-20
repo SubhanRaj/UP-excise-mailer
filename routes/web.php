@@ -45,10 +45,13 @@ Route::prefix('recipients')->name('recipients.')->middleware(['auth', 'is_admin'
     Route::put('/divisions/{division}', [RecipientController::class, 'updateDivision'])->name('divisions.update');
     Route::get('/districts/{district}/edit', [RecipientController::class, 'editDistrict'])->name('districts.edit');
     Route::put('/districts/{district}', [RecipientController::class, 'updateDistrict'])->name('districts.update');
+    Route::get('/template/{level}', [RecipientController::class, 'downloadTemplate'])->name('template');
+    Route::get('/import', \App\Livewire\OfficerDirectoryImportWizard::class)->name('import');
 });
 
-Route::resource('templates', MailTemplateController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
-    ->middleware(['auth', 'throttle:mutations']);
+Route::get('/templates', [MailTemplateController::class, 'index'])->middleware('auth')->name('templates.index');
+Route::resource('templates', MailTemplateController::class)->only(['create', 'store', 'edit', 'update', 'destroy'])
+    ->middleware(['auth', 'privilege:templates.manage', 'throttle:mutations']);
 
 Route::get('/recipient-lists', [RecipientListController::class, 'index'])->middleware('auth')->name('recipient-lists.index');
 Route::get('/recipient-lists/{recipientList}', [RecipientListController::class, 'show'])->middleware('auth')->name('recipient-lists.show');

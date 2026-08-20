@@ -15,19 +15,19 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label class="field-label">AEC (DEO) Name</label>
+                    <label class="field-label">DEO Name</label>
                     <input type="text" name="deo_name" value="{{ old('deo_name', $district->deo_name) }}" class="field-input @error('deo_name') field-error @enderror">
                     @error('deo_name')<p class="field-err-msg">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label class="field-label">AEC (DEO) CUG</label>
+                    <label class="field-label">DEO CUG</label>
                     <input type="text" name="deo_cug" value="{{ old('deo_cug', $district->deo_cug) }}" class="field-input @error('deo_cug') field-error @enderror">
                     @error('deo_cug')<p class="field-err-msg">{{ $message }}</p>@enderror
                 </div>
             </div>
 
             <div>
-                <label class="field-label">AEC (DEO) Email</label>
+                <label class="field-label">DEO Email</label>
                 <input type="email" name="deo_email" value="{{ old('deo_email', $district->deo_email) }}" class="field-input @error('deo_email') field-error @enderror">
                 @error('deo_email')<p class="field-err-msg">{{ $message }}</p>@enderror
             </div>

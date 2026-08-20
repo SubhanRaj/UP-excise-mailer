@@ -230,10 +230,16 @@ class CampaignBuilder extends Component
             ]);
 
             foreach ($recipients as $index => $r) {
+                // wire:model on the match-override <select> doesn't itself constrain the value
+                // to one of its rendered options — re-check against the actual extracted file
+                // list server-side before it becomes a filesystem path.
+                $override = $this->zipMatchOverride[$index] ?? null;
+                $overrideIsValid = $override && in_array($override, $this->zipExtractedFiles, true);
+
                 $attachmentPath = match (true) {
                     $singleFilePath !== null => $singleFilePath,
-                    $this->wantsAttachment && $this->attachmentMode === 'zip_per_recipient' && ! empty($this->zipMatchOverride[$index]) =>
-                        $this->zipExtractDir.'/'.$this->zipMatchOverride[$index],
+                    $this->wantsAttachment && $this->attachmentMode === 'zip_per_recipient' && $overrideIsValid =>
+                        $this->zipExtractDir.'/'.$override,
                     default => null,
                 };
 
@@ -280,26 +286,34 @@ class CampaignBuilder extends Component
     public function candidateRecipients(): Collection
     {
         $collection = match ($this->scope) {
-            'all' => District::with('division.zone')->get()->map(fn (District $d) => [
-                'type' => 'district', 'ref_id' => $d->id, 'name' => $d->deo_name, 'email' => $d->deo_email,
+            // "Everyone" = every zone, division, and district officer who has an email on
+            // file — the whole org tree, not just the most granular level.
+            'all' => Zone::get()->map(fn (Zone $z) => [
+                'type' => 'zone', 'ref_id' => $z->id, 'name' => $z->officerDisplayName(), 'email' => $z->jc_email,
+                'vars' => ['zone' => $z->name, 'officer' => $z->officerDisplayName(), 'cug' => $z->jc_cug],
+            ])->concat(Division::with('zone')->get()->map(fn (Division $d) => [
+                'type' => 'division', 'ref_id' => $d->id, 'name' => $d->officerDisplayName(), 'email' => $d->dc_email,
+                'vars' => ['division' => $d->name, 'zone' => $d->zone?->name, 'officer' => $d->officerDisplayName(), 'cug' => $d->dc_cug],
+            ]))->concat(District::with('division.zone')->get()->map(fn (District $d) => [
+                'type' => 'district', 'ref_id' => $d->id, 'name' => $d->officerDisplayName(), 'email' => $d->deo_email,
                 'vars' => [
                     'district' => $d->name, 'division' => $d->division?->name, 'zone' => $d->division?->zone?->name,
-                    'officer' => $d->deo_name, 'cug' => $d->deo_cug,
+                    'officer' => $d->officerDisplayName(), 'cug' => $d->deo_cug,
                 ],
-            ]),
+            ])),
             'zones' => Zone::whereIn('id', $this->selectedZoneIds)->get()->map(fn (Zone $z) => [
-                'type' => 'zone', 'ref_id' => $z->id, 'name' => $z->jc_name, 'email' => $z->jc_email,
-                'vars' => ['zone' => $z->name, 'officer' => $z->jc_name, 'cug' => $z->jc_cug],
+                'type' => 'zone', 'ref_id' => $z->id, 'name' => $z->officerDisplayName(), 'email' => $z->jc_email,
+                'vars' => ['zone' => $z->name, 'officer' => $z->officerDisplayName(), 'cug' => $z->jc_cug],
             ]),
             'divisions' => Division::with('zone')->whereIn('id', $this->selectedDivisionIds)->get()->map(fn (Division $d) => [
-                'type' => 'division', 'ref_id' => $d->id, 'name' => $d->dc_name, 'email' => $d->dc_email,
-                'vars' => ['division' => $d->name, 'zone' => $d->zone?->name, 'officer' => $d->dc_name, 'cug' => $d->dc_cug],
+                'type' => 'division', 'ref_id' => $d->id, 'name' => $d->officerDisplayName(), 'email' => $d->dc_email,
+                'vars' => ['division' => $d->name, 'zone' => $d->zone?->name, 'officer' => $d->officerDisplayName(), 'cug' => $d->dc_cug],
             ]),
             'districts' => District::with('division.zone')->whereIn('id', $this->selectedDistrictIds)->get()->map(fn (District $d) => [
-                'type' => 'district', 'ref_id' => $d->id, 'name' => $d->deo_name, 'email' => $d->deo_email,
+                'type' => 'district', 'ref_id' => $d->id, 'name' => $d->officerDisplayName(), 'email' => $d->deo_email,
                 'vars' => [
                     'district' => $d->name, 'division' => $d->division?->name, 'zone' => $d->division?->zone?->name,
-                    'officer' => $d->deo_name, 'cug' => $d->deo_cug,
+                    'officer' => $d->officerDisplayName(), 'cug' => $d->deo_cug,
                 ],
             ]),
             'recipient_list' => $this->recipientListId !== ''

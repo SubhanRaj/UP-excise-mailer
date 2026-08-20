@@ -21,4 +21,14 @@ class District extends Model
     {
         return $this->belongsTo(Division::class);
     }
+
+    /**
+     * AEC (Assistant Excise Commissioner) is the cadre; DEO (District Excise Officer) is the
+     * post held at a district posting — always call this DEO, never "AEC (DEO)". Falls back to
+     * a placeholder until a real name is on file.
+     */
+    public function officerDisplayName(): string
+    {
+        return $this->deo_name ?: "DEO - {$this->name}";
+    }
 }
