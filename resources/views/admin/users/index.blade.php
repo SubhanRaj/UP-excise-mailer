@@ -59,7 +59,7 @@
                                 </a>
                                 @if($user->id !== auth()->id())
                                 <form method="POST" action="{{ route('admin.users.destroy', $user) }}"
-                                      onsubmit="return confirm('Deactivate this user? They will no longer be able to sign in.');">
+                                      data-confirm="Deactivate this user? They will no longer be able to sign in.">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Deactivate">

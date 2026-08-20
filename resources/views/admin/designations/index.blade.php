@@ -32,7 +32,7 @@
                                     <i class="ti ti-pencil text-base"></i>
                                 </a>
                                 <form method="POST" action="{{ route('admin.designations.destroy', $designation) }}"
-                                      onsubmit="return confirm('Delete this designation? Existing users keep whatever privileges they already have.');">
+                                      data-confirm="Delete this designation? Existing users keep whatever privileges they already have.">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Delete">

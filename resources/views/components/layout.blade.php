@@ -39,9 +39,28 @@
 
 @stack('scripts')
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 if (! window.__layoutScriptsInitialized) {
 window.__layoutScriptsInitialized = true;
+
+// Delegated once for the whole app — any form with data-confirm="..." gets a SweetAlert2
+// confirmation instead of the browser's plain confirm() popup before it actually submits.
+document.addEventListener('submit', function (e) {
+    const form = e.target;
+    if (! (form instanceof HTMLFormElement) || ! form.hasAttribute('data-confirm')) return;
+    e.preventDefault();
+    Swal.fire({
+        title: form.dataset.confirm,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Yes, continue',
+    }).then(function (result) {
+        if (result.isConfirmed) form.submit();
+    });
+});
 
 window.toggleDarkMode = function () {
     const isDark = document.documentElement.classList.toggle('dark');

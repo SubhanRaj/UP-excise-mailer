@@ -40,7 +40,7 @@
                         <td class="px-4 py-3 text-right">
                             @if(auth()->user()->hasPrivilege('recipients.import'))
                             <form method="POST" action="{{ route('recipient-lists.destroy', $list) }}"
-                                  onsubmit="return confirm('Delete this recipient list?');" class="inline">
+                                  data-confirm="Delete this recipient list?" class="inline">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Delete">

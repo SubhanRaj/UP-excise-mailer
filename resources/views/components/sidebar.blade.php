@@ -19,9 +19,15 @@
         </a>
 
         <a href="{{ route('campaigns.index') }}" wire:navigate data-tooltip="Campaigns"
-           class="nav-link {{ request()->routeIs('campaigns.*') ? 'nav-link-active' : 'nav-link-idle' }}">
+           class="nav-link {{ request()->routeIs('campaigns.*') && ! request()->routeIs('campaigns.sent-mail') ? 'nav-link-active' : 'nav-link-idle' }}">
             <i class="ti ti-send w-5 text-center text-base flex-shrink-0"></i>
             <span class="sidebar-text">Campaigns</span>
+        </a>
+
+        <a href="{{ route('campaigns.sent-mail') }}" wire:navigate data-tooltip="Sent Mail"
+           class="nav-link {{ request()->routeIs('campaigns.sent-mail') ? 'nav-link-active' : 'nav-link-idle' }}">
+            <i class="ti ti-mail-check w-5 text-center text-base flex-shrink-0"></i>
+            <span class="sidebar-text">Sent Mail</span>
         </a>
 
         <a href="{{ route('templates.index') }}" wire:navigate data-tooltip="Templates"
