@@ -1,0 +1,677 @@
+[
+  {
+    "name": "Agra",
+    "division": "Agra",
+    "deo_name": "श्री कृष्ण पाल यादव",
+    "deo_email": "deoagra1@gmail.com",
+    "deo_cug": "9454465661",
+    "latitude": 27.042942,
+    "longitude": 78.06981
+  },
+  {
+    "name": "Aligarh",
+    "division": "Aligarh",
+    "deo_name": "श्री दिनेश कुमार गुप्ता",
+    "deo_email": "deoaligarh@gmail.com",
+    "deo_cug": "9454465665",
+    "latitude": 27.93025,
+    "longitude": 78.033208
+  },
+  {
+    "name": "Prayagraj",
+    "division": "Prayagraj",
+    "deo_name": "श्री सुशील कुमार मिश्रा",
+    "deo_email": "deoald16@gmail.com",
+    "deo_cug": "9454465614",
+    "latitude": 25.324129,
+    "longitude": 81.947424
+  },
+  {
+    "name": "Ambedkar Nagar",
+    "division": "Ayodhya",
+    "deo_name": "श्री अखिलेश कुमार सिंह",
+    "deo_email": "aecamb641@gmail.com",
+    "deo_cug": "9454465641",
+    "latitude": 26.37926,
+    "longitude": 82.646744
+  },
+  {
+    "name": "Amethi",
+    "division": "Ayodhya",
+    "deo_name": "श्री अखिलेश कुमार आर्य",
+    "deo_email": "exciseame@gmail.com",
+    "deo_cug": "9454465640",
+    "latitude": 26.339341,
+    "longitude": 81.667443
+  },
+  {
+    "name": "Amroha",
+    "division": "Moradabad",
+    "deo_name": "श्री जितेन्द्र कुमार पाण्डेय",
+    "deo_email": "deojpnagar@gmail.com",
+    "deo_cug": "9454465656",
+    "latitude": 28.859358,
+    "longitude": 78.403703
+  },
+  {
+    "name": "Auraiya",
+    "division": "Kanpur",
+    "deo_name": "श्री सुरेन्द्र कुमार",
+    "deo_email": "auraiyadeo@gmail.com",
+    "deo_cug": "9454465673",
+    "latitude": 26.688222,
+    "longitude": 79.466309
+  },
+  {
+    "name": "Ayodhya",
+    "division": "Ayodhya",
+    "deo_name": "श्री सुरेश मिश्रा",
+    "deo_email": "aecfaizabad@gmail.com",
+    "deo_cug": "9454465637",
+    "latitude": 26.630671,
+    "longitude": 81.968352
+  },
+  {
+    "name": "Azamgarh",
+    "division": "Azamgarh",
+    "deo_name": "श्री राजेश कुमार मिश्रा",
+    "deo_email": "deo.azm@gmail.com",
+    "deo_cug": "9454465621",
+    "latitude": 26.027369,
+    "longitude": 83.052547
+  },
+  {
+    "name": "Baghpat",
+    "division": "Meerut",
+    "deo_name": "श्री नवीन कुमार सिंह",
+    "deo_email": "deobpt@gmail.com",
+    "deo_cug": "9454465651",
+    "latitude": 29.028229,
+    "longitude": 77.324642
+  },
+  {
+    "name": "Bahraich",
+    "division": "Devipatan",
+    "deo_name": "श्री सुधांशु सिंह",
+    "deo_email": "deobch@gmail.com",
+    "deo_cug": "9454465643",
+    "latitude": 27.629416,
+    "longitude": 81.572178
+  },
+  {
+    "name": "Ballia",
+    "division": "Azamgarh",
+    "deo_name": "श्री विजय शुक्ला",
+    "deo_email": "deo.ballia623@gmail.com",
+    "deo_cug": "9454465622",
+    "latitude": 25.849017,
+    "longitude": 84.057345
+  },
+  {
+    "name": "Balrampur",
+    "division": "Devipatan",
+    "deo_name": "श्री मृत्युंजय प्रताप सिंह",
+    "deo_email": "deobalrampur79@gmail.com",
+    "deo_cug": "9454465644",
+    "latitude": 27.401937,
+    "longitude": 82.427403
+  },
+  {
+    "name": "Banda",
+    "division": "Chitrakoot",
+    "deo_name": "श्री धमेन्द्र सिंह यादव",
+    "deo_email": "banda.deo2003@gmail.com",
+    "deo_cug": "9454465679",
+    "latitude": 25.314001,
+    "longitude": 80.523713
+  },
+  {
+    "name": "Barabanki",
+    "division": "Ayodhya",
+    "deo_name": "श्री कुलदीप दिनकर",
+    "deo_email": "deobarabanki@gmail.com",
+    "deo_cug": "9454465638",
+    "latitude": 26.938295,
+    "longitude": 81.330985
+  },
+  {
+    "name": "Bareilly",
+    "division": "Bareilly",
+    "deo_name": "श्री हुकुम सिंह",
+    "deo_email": "bareillyexcise1@gmail.com",
+    "deo_cug": "9454465646",
+    "latitude": 28.470088,
+    "longitude": 79.445006
+  },
+  {
+    "name": "Basti",
+    "division": "Basti",
+    "deo_name": "श्री राजेश कुमार",
+    "deo_email": "deobasti1@gmail.com",
+    "deo_cug": "9454465628",
+    "latitude": 26.866412,
+    "longitude": 82.697195
+  },
+  {
+    "name": "Bhadohi",
+    "division": "Vindhyachal",
+    "deo_name": "श्री अरूण कुमार शुक्ला",
+    "deo_email": "deobhadohi@gmail.com",
+    "deo_cug": "9454465620",
+    "latitude": 25.374194,
+    "longitude": 82.447441
+  },
+  {
+    "name": "Bijnor",
+    "division": "Moradabad",
+    "deo_name": "श्री वरूण कुमार",
+    "deo_email": "deoofficebijnor@gmail.com",
+    "deo_cug": "9454465658",
+    "latitude": 29.310857,
+    "longitude": 78.442236
+  },
+  {
+    "name": "Budaun",
+    "division": "Bareilly",
+    "deo_name": "श्री विजय सिंह चौहान",
+    "deo_email": "deoaecbadaun@gmail.com",
+    "deo_cug": "9454465647",
+    "latitude": 28.073069,
+    "longitude": 79.062632
+  },
+  {
+    "name": "Bulandshahr",
+    "division": "Meerut",
+    "deo_name": "श्री राजेन्द्र कुमार",
+    "deo_email": "deobsr@gmail.com",
+    "deo_cug": "9454465652",
+    "latitude": 28.330306,
+    "longitude": 78.000736
+  },
+  {
+    "name": "Chandauli",
+    "division": "Varanasi",
+    "deo_name": "श्री सुभाष चन्द्र",
+    "deo_email": "aecchandauli1@gmail.com",
+    "deo_cug": "9454465611",
+    "latitude": 25.085142,
+    "longitude": 83.263952
+  },
+  {
+    "name": "Chitrakoot",
+    "division": "Chitrakoot",
+    "deo_name": "श्री अखिलेन्द्र बहादुर सिंह",
+    "deo_email": "deochitrakoot1@gmail.com",
+    "deo_cug": "9454465680",
+    "latitude": 25.14992,
+    "longitude": 81.05042
+  },
+  {
+    "name": "Deoria",
+    "division": "Gorakhpur",
+    "deo_name": "श्री अनिल कुमार भारती",
+    "deo_email": "deodeoria2003@gmail.com",
+    "deo_cug": "9454465625",
+    "latitude": 26.444951,
+    "longitude": 83.804424
+  },
+  {
+    "name": "Etah",
+    "division": "Aligarh",
+    "deo_name": "श्री अनूप शर्मा",
+    "deo_email": "deoetah01@gmail.com",
+    "deo_cug": "9454465668",
+    "latitude": 27.505787,
+    "longitude": 78.766945
+  },
+  {
+    "name": "Etawah",
+    "division": "Kanpur",
+    "deo_name": "श्री विजय पाल सिंह",
+    "deo_email": "deoetawah01@gmail.com",
+    "deo_cug": "9454465672",
+    "latitude": 26.755739,
+    "longitude": 79.088958
+  },
+  {
+    "name": "Farrukhabad",
+    "division": "Kanpur",
+    "deo_name": "श्री गुरु प्रसाद गुप्ता",
+    "deo_email": "deofarrukhabad2013@gmail.com",
+    "deo_cug": "9454465674",
+    "latitude": 27.413546,
+    "longitude": 79.456148
+  },
+  {
+    "name": "Fatehpur",
+    "division": "Prayagraj",
+    "deo_name": "श्री अशोक कुमार द्वितीय",
+    "deo_email": "fatehpurdeo@gmail.com",
+    "deo_cug": "9454465616",
+    "latitude": 25.850449,
+    "longitude": 80.823029
+  },
+  {
+    "name": "Firozabad",
+    "division": "Agra",
+    "deo_name": "श्री रविशंकर प्रथम",
+    "deo_email": "firozabadexcise@gmail.com",
+    "deo_cug": "9454465662",
+    "latitude": 27.18699,
+    "longitude": 78.533979
+  },
+  {
+    "name": "Gautam Buddha Nagar",
+    "division": "Meerut",
+    "deo_name": "श्री सुबोध कुमार",
+    "deo_email": "deogbnagar2003@gmail.com",
+    "deo_cug": "9454465654",
+    "latitude": 28.350125,
+    "longitude": 77.57451
+  },
+  {
+    "name": "Ghaziabad",
+    "division": "Meerut",
+    "deo_name": "श्री संजय कुमार-प्रथम",
+    "deo_email": "upexciseghaziabad@gmail.com",
+    "deo_cug": "9454465653",
+    "latitude": 28.779815,
+    "longitude": 77.472838
+  },
+  {
+    "name": "Ghazipur",
+    "division": "Varanasi",
+    "deo_name": "श्री राजेश त्रिपाठी",
+    "deo_email": "exciseghazipur01@gmail.com",
+    "deo_cug": "9454465612",
+    "latitude": 25.637543,
+    "longitude": 83.534171
+  },
+  {
+    "name": "Gonda",
+    "division": "Devipatan",
+    "deo_name": "श्री प्रगल्भ लवानिया",
+    "deo_email": "upexcise.gonda@gmail.com",
+    "deo_cug": "9454465642",
+    "latitude": 27.128371,
+    "longitude": 82.114515
+  },
+  {
+    "name": "Gorakhpur",
+    "division": "Gorakhpur",
+    "deo_name": "श्री महेन्द्र नाथ सिंह",
+    "deo_email": "deogorakhpur@gmail.com",
+    "deo_cug": "9454465624",
+    "latitude": 26.729708,
+    "longitude": 83.338722
+  },
+  {
+    "name": "Hamirpur",
+    "division": "Chitrakoot",
+    "deo_name": "श्री अमर सिंह बोनाल",
+    "deo_email": "deoexcisehamirpur2003@gmail.com",
+    "deo_cug": "9454465681",
+    "latitude": 25.73494,
+    "longitude": 79.831699
+  },
+  {
+    "name": "Hapur",
+    "division": "Meerut",
+    "deo_name": "श्री प्रकाश सिंह",
+    "deo_email": "deohapur@gmail.com",
+    "deo_cug": "9454466409",
+    "latitude": 28.724199,
+    "longitude": 77.883701
+  },
+  {
+    "name": "Hardoi",
+    "division": "Lucknow",
+    "deo_name": "श्री कुवँर पाल",
+    "deo_email": "deohardoi708@gmail.com",
+    "deo_cug": "9454465632",
+    "latitude": 27.337474,
+    "longitude": 80.212297
+  },
+  {
+    "name": "Hathras",
+    "division": "Aligarh",
+    "deo_name": "श्री कृष्ण मोहन गोस्वामी",
+    "deo_email": "deohathras2003@gmail.com",
+    "deo_cug": "9454465667",
+    "latitude": 27.566613,
+    "longitude": 78.157216
+  },
+  {
+    "name": "Jalaun",
+    "division": "Jhansi",
+    "deo_name": "श्री भूपेन्द्र सिंह",
+    "deo_email": "deojalaun11@gmail.com",
+    "deo_cug": "9454465677",
+    "latitude": 26.077868,
+    "longitude": 79.331427
+  },
+  {
+    "name": "Jaunpur",
+    "division": "Varanasi",
+    "deo_name": "श्री विष्णु प्रताप सिंह",
+    "deo_email": "excise.jnp@gmail.com",
+    "deo_cug": "9454465613",
+    "latitude": 25.767321,
+    "longitude": 82.589338
+  },
+  {
+    "name": "Jhansi",
+    "division": "Jhansi",
+    "deo_name": "श्री मनीष कुमार",
+    "deo_email": "deojhs01@gmail.com",
+    "deo_cug": "9454465676",
+    "latitude": 25.442172,
+    "longitude": 78.895565
+  },
+  {
+    "name": "Kannauj",
+    "division": "Kanpur",
+    "deo_name": "श्री वरूण कुमार लाल",
+    "deo_email": "deoknj@gmail.com",
+    "deo_cug": "9454465675",
+    "latitude": 27.034756,
+    "longitude": 79.642295
+  },
+  {
+    "name": "Kanpur Dehat",
+    "division": "Kanpur",
+    "deo_name": "श्री संजय यादव-द्वितीय",
+    "deo_email": "deokanpurdehat123@gmail.com",
+    "deo_cug": "9454465671",
+    "latitude": 26.465675,
+    "longitude": 79.942769
+  },
+  {
+    "name": "Kanpur Nagar",
+    "division": "Kanpur",
+    "deo_name": "श्री राजेश सिंह",
+    "deo_email": "deoknp105@gmail.com",
+    "deo_cug": "9454465670",
+    "latitude": 26.440773,
+    "longitude": 80.159708
+  },
+  {
+    "name": "Kasganj",
+    "division": "Aligarh",
+    "deo_name": "श्री संजय कुमार सिंह",
+    "deo_email": "deokasganj@gmail.com",
+    "deo_cug": "9454465669",
+    "latitude": 27.736445,
+    "longitude": 78.843313
+  },
+  {
+    "name": "Kaushambi",
+    "division": "Prayagraj",
+    "deo_name": "श्री राजेश प्रसाद",
+    "deo_email": "kaushambideo@gmail.com",
+    "deo_cug": "9454465615",
+    "latitude": 25.542484,
+    "longitude": 81.400616
+  },
+  {
+    "name": "Lakhimpur Kheri",
+    "division": "Lucknow",
+    "deo_name": "श्री राजवीर सिंह",
+    "deo_email": "upexcise.deo.kheri@gmail.com",
+    "deo_cug": "9454465633",
+    "latitude": 28.061231,
+    "longitude": 80.631967
+  },
+  {
+    "name": "Kushinagar",
+    "division": "Gorakhpur",
+    "deo_name": "श्री राम स्वास्थ",
+    "deo_email": "deokushinagar01@gmail.com",
+    "deo_cug": "9454465627",
+    "latitude": 26.882739,
+    "longitude": 83.89652
+  },
+  {
+    "name": "Lalitpur",
+    "division": "Jhansi",
+    "deo_name": "श्री विजय सिद्धान्त",
+    "deo_email": "deolalitpur123@gmail.com",
+    "deo_cug": "9454465678",
+    "latitude": 24.587145,
+    "longitude": 78.622755
+  },
+  {
+    "name": "Lucknow",
+    "division": "Lucknow",
+    "deo_name": "श्री करुणेन्द्र सिंह",
+    "deo_email": "deolucknow@gmail.com",
+    "deo_cug": "9454465631",
+    "latitude": 26.831408,
+    "longitude": 80.896545
+  },
+  {
+    "name": "Maharajganj",
+    "division": "Gorakhpur",
+    "deo_name": "श्री अतुल चन्द्र द्विवेदी",
+    "deo_email": "deo.maharajganj@gmail.com",
+    "deo_cug": "9454465626",
+    "latitude": 27.139296,
+    "longitude": 83.477822
+  },
+  {
+    "name": "Mahoba",
+    "division": "Chitrakoot",
+    "deo_name": "श्री राजेन्द्र प्रसाद वर्मा",
+    "deo_email": "Mahobadeo@gmail.com",
+    "deo_cug": "9454465682",
+    "latitude": 25.356263,
+    "longitude": 79.730229
+  },
+  {
+    "name": "Mainpuri",
+    "division": "Agra",
+    "deo_name": null,
+    "deo_email": "deomainpuri84@gmail.com",
+    "deo_cug": "9454465664",
+    "latitude": 27.205406,
+    "longitude": 79.054242
+  },
+  {
+    "name": "Mathura",
+    "division": "Agra",
+    "deo_name": "श्री उपेन्द्र सिंह",
+    "deo_email": "deomathura85@gmail.com",
+    "deo_cug": "9454465663",
+    "latitude": 27.567371,
+    "longitude": 77.666304
+  },
+  {
+    "name": "Mau",
+    "division": "Azamgarh",
+    "deo_name": "श्री मो० असलम",
+    "deo_email": "deomau1@gmail.com",
+    "deo_cug": "9454465623",
+    "latitude": 26.004251,
+    "longitude": 83.552809
+  },
+  {
+    "name": "Meerut",
+    "division": "Meerut",
+    "deo_name": "श्री प्रदीप कुमार सिंह-प्रथम",
+    "deo_email": "deomrt@gmail.com",
+    "deo_cug": "9454465650",
+    "latitude": 29.010478,
+    "longitude": 77.773329
+  },
+  {
+    "name": "Mirzapur",
+    "division": "Vindhyachal",
+    "deo_name": "श्री ज्ञानेन्द्र नाथ पाण्डेय",
+    "deo_email": "mirzapurexcise@gmail.com",
+    "deo_cug": "9454465618",
+    "latitude": 24.96279,
+    "longitude": 82.567589
+  },
+  {
+    "name": "Moradabad",
+    "division": "Moradabad",
+    "deo_name": "श्री रवीन्द्र प्रताप सिंह",
+    "deo_email": "deombd@gmail.com",
+    "deo_cug": "9454465655",
+    "latitude": 28.875259,
+    "longitude": 78.818358
+  },
+  {
+    "name": "Muzaffarnagar",
+    "division": "Saharanpur",
+    "deo_name": "श्री राकेश बहादुर सिंह",
+    "deo_email": "deomzfupexcise1@gmail.com",
+    "deo_cug": "9454465660",
+    "latitude": 29.43475,
+    "longitude": 77.703732
+  },
+  {
+    "name": "Pilibhit",
+    "division": "Bareilly",
+    "deo_name": "श्री कल्पनाथ रजक",
+    "deo_email": "deopilibhit1684@gmail.com",
+    "deo_cug": "9454465648",
+    "latitude": 28.455509,
+    "longitude": 79.936534
+  },
+  {
+    "name": "Pratapgarh",
+    "division": "Prayagraj",
+    "deo_name": "श्री अखिलेश्वर नाथ सिंह",
+    "deo_email": "deopratapgarh9454@gmail.com",
+    "deo_cug": "9454465617",
+    "latitude": 25.88682,
+    "longitude": 81.87207
+  },
+  {
+    "name": "Raebareli",
+    "division": "Lucknow",
+    "deo_name": "श्री दिनेश कुमार",
+    "deo_email": "deorby@gmail.com",
+    "deo_cug": "9454465634",
+    "latitude": 26.233653,
+    "longitude": 81.187058
+  },
+  {
+    "name": "Rampur",
+    "division": "Moradabad",
+    "deo_name": "श्री हिम्मत सिंह",
+    "deo_email": "deorampur6@gmail.com",
+    "deo_cug": "9454465657",
+    "latitude": 28.81747,
+    "longitude": 79.099196
+  },
+  {
+    "name": "Saharanpur",
+    "division": "Saharanpur",
+    "deo_name": "श्री महेन्द्र प्रताप सिंह",
+    "deo_email": "deosre1919@gmail.com",
+    "deo_cug": "9454465659",
+    "latitude": 29.900431,
+    "longitude": 77.544539
+  },
+  {
+    "name": "Sambhal",
+    "division": "Moradabad",
+    "deo_name": null,
+    "deo_email": "deosbl@gmail.com",
+    "deo_cug": "9454466500",
+    "latitude": 28.476837,
+    "longitude": 78.622774
+  },
+  {
+    "name": "Sant Kabir Nagar",
+    "division": "Basti",
+    "deo_name": "श्री संजय कुमार द्वितीय",
+    "deo_email": "deoexciseskn01@gmail.com",
+    "deo_cug": "9454465630",
+    "latitude": 26.806032,
+    "longitude": 83.03335
+  },
+  {
+    "name": "Shahjahanpur",
+    "division": "Bareilly",
+    "deo_name": "श्री उदय प्रकाश",
+    "deo_email": "deoshahjahanpur@gmail.com",
+    "deo_cug": "9454465649",
+    "latitude": 27.968192,
+    "longitude": 79.830739
+  },
+  {
+    "name": "Shamli",
+    "division": "Saharanpur",
+    "deo_name": null,
+    "deo_email": "deoshamli@gmail.com",
+    "deo_cug": "9454466461",
+    "latitude": 29.513816,
+    "longitude": 77.284797
+  },
+  {
+    "name": "Shravasti",
+    "division": "Devipatan",
+    "deo_name": "श्री घनश्याम मिश्रा",
+    "deo_email": "addoshr@gmail.com",
+    "deo_cug": "9454465645",
+    "latitude": 27.670874,
+    "longitude": 81.875064
+  },
+  {
+    "name": "Siddharthnagar",
+    "division": "Basti",
+    "deo_name": "श्री वीर अभिमन्यु कुमार",
+    "deo_email": "sdrupexcise@gmail.com",
+    "deo_cug": "9454465629",
+    "latitude": 27.227502,
+    "longitude": 82.798524
+  },
+  {
+    "name": "Sitapur",
+    "division": "Lucknow",
+    "deo_name": "श्री श्याम कमल सिंह",
+    "deo_email": "deositapur123@gmail.com",
+    "deo_cug": "9454465635",
+    "latitude": 27.504209,
+    "longitude": 80.839035
+  },
+  {
+    "name": "Sonbhadra",
+    "division": "Vindhyachal",
+    "deo_name": "श्री प्रवीण कुमार पाण्डेय",
+    "deo_email": "sonbhadraexcise@gmail.com",
+    "deo_cug": "9454465619",
+    "latitude": 24.489591,
+    "longitude": 83.01253
+  },
+  {
+    "name": "Sultanpur",
+    "division": "Ayodhya",
+    "deo_name": "श्री राजेश कुमार तिवारी",
+    "deo_email": "deosul24@gmail.com",
+    "deo_cug": "9454465639",
+    "latitude": 26.264583,
+    "longitude": 82.228238
+  },
+  {
+    "name": "Unnao",
+    "division": "Lucknow",
+    "deo_name": "श्री अनुराग मिश्रा",
+    "deo_email": "deounnao.upexcise@gmail.com",
+    "deo_cug": "9454465636",
+    "latitude": 26.622593,
+    "longitude": 80.636328
+  },
+  {
+    "name": "Varanasi",
+    "division": "Varanasi",
+    "deo_name": "श्री कमल कुमार शुक्ला",
+    "deo_email": "aec.vns596@gmail.com",
+    "deo_cug": "9454465610",
+    "latitude": 25.374595,
+    "longitude": 82.88727
+  }
+]
