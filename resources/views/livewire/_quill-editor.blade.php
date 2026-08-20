@@ -29,5 +29,17 @@
         });
 
         window['{{ $model }}Quill'] = quill;
+
+        // Server-side changes to $body (picking a saved template, saving a new one) can't
+        // reach this DOM on their own — it's wire:ignore'd so Quill, not Livewire, owns it.
+        // Called directly (not wrapped in a livewire:init/livewire:navigated listener): this
+        // script re-runs fresh each time this block re-enters the DOM (step navigation), but
+        // livewire:init fires exactly once per page load — wrapping in it here would mean this
+        // listener never (re-)registers for any Quill instance created after the first.
+        Livewire.on('quill-set-content', function (data) {
+            if (data.model !== '{{ $model }}') return;
+            quill.root.innerHTML = data.html || '';
+            hidden.value = quill.root.innerHTML;
+        });
     })();
 </script>
