@@ -598,6 +598,26 @@ relation to the district at all (a bare numeric code, an unrelated
 abbreviation scheme) still shows "no match" for manual override — never
 silently wrong, always caught in the confirmation table before send.
 
+### NIC email (mGovCloud) as a mail account provider (2026-08-20, done)
+
+Added a third **Provider** preset next to Gmail and Custom SMTP on
+Add/Edit Mail Account: **NIC Email (mGovCloud)**, using the config from
+mgovcloud.in's own NIC SMTP docs — host `smtp.mgovcloud.in`, port 587
+with TLS (the docs also list port 465 with SSL as an alternative;
+either works, since the encryption fix below picks it automatically
+from the port). No schema/backend change needed — `mail_accounts` was
+already provider-agnostic (`gmail_address` is really just a username
+column, `smtp_host`/`smtp_port` already free-text); this is purely a
+third labeled preset in the same provider-switch JS, refactored from an
+`isGmail` ternary into a small lookup object so adding this one didn't
+mean duplicating the whole handler a third time.
+- **Real bug fix alongside it**: `MailAccount::mailerConfig()` hardcoded
+  `'encryption' => 'tls'` regardless of port — harmless for Gmail
+  (always TLS/587 in this app) but would have silently broken NIC's
+  port-465-SSL option, and any other future provider using SSL. Now
+  derives it: `$this->smtp_port === 465 ? 'ssl' : 'tls'`. Verified both
+  branches directly against `mailerConfig()`'s output.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a

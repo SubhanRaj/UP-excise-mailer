@@ -20,6 +20,7 @@
                     <label class="field-label">Provider</label>
                     <select id="provider" class="field-input">
                         <option value="gmail">Gmail (App Password)</option>
+                        <option value="nic">NIC Email (mGovCloud)</option>
                         <option value="custom">Custom SMTP</option>
                     </select>
                 </div>
@@ -80,15 +81,31 @@
     </div>
 
     <script>
+        const mailProviderPresets = {
+            gmail: {
+                address: 'Gmail Address', password: 'App Password',
+                hint: 'Gmail app password (Google One paid seat), not the account login password.',
+                host: 'smtp.gmail.com', port: 587,
+            },
+            nic: {
+                address: 'NIC Email Address', password: 'Password',
+                hint: 'Your NIC email password — or an app-specific password if two-factor authentication is enabled.',
+                host: 'smtp.mgovcloud.in', port: 587,
+            },
+            custom: {
+                address: 'SMTP Username / From Address', password: 'SMTP Password',
+                hint: 'Password for the SMTP account above.',
+                host: '', port: '',
+            },
+        };
+
         document.getElementById('provider')?.addEventListener('change', function () {
-            const isGmail = this.value === 'gmail';
-            document.getElementById('address-label').textContent = isGmail ? 'Gmail Address' : 'SMTP Username / From Address';
-            document.getElementById('password-label').textContent = isGmail ? 'App Password' : 'SMTP Password';
-            document.getElementById('password-hint').textContent = isGmail
-                ? 'Gmail app password (Google One paid seat), not the account login password.'
-                : 'Password for the SMTP account above.';
-            document.getElementById('smtp_host').value = isGmail ? 'smtp.gmail.com' : '';
-            document.getElementById('smtp_port').value = isGmail ? 587 : '';
+            const preset = mailProviderPresets[this.value];
+            document.getElementById('address-label').textContent = preset.address;
+            document.getElementById('password-label').textContent = preset.password;
+            document.getElementById('password-hint').textContent = preset.hint;
+            document.getElementById('smtp_host').value = preset.host;
+            document.getElementById('smtp_port').value = preset.port;
         });
     </script>
 </x-layout>
