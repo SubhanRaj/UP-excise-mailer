@@ -48,6 +48,7 @@
                 <div>
                     <label class="field-label">SMTP Port</label>
                     <input type="number" id="smtp_port" name="smtp_port" value="{{ old('smtp_port', 587) }}" required class="field-input @error('smtp_port') field-error @enderror">
+                    <p class="field-hint">587 for TLS, or 465 for SSL.</p>
                     @error('smtp_port')<p class="field-err-msg">{{ $message }}</p>@enderror
                 </div>
             </div>
@@ -81,31 +82,33 @@
     </div>
 
     <script>
-        const mailProviderPresets = {
-            gmail: {
-                address: 'Gmail Address', password: 'App Password',
-                hint: 'Gmail app password (Google One paid seat), not the account login password.',
-                host: 'smtp.gmail.com', port: 587,
-            },
-            nic: {
-                address: 'NIC Email Address', password: 'Password',
-                hint: 'Your NIC email password — or an app-specific password if two-factor authentication is enabled.',
-                host: 'smtp.mgovcloud.in', port: 587,
-            },
-            custom: {
-                address: 'SMTP Username / From Address', password: 'SMTP Password',
-                hint: 'Password for the SMTP account above.',
-                host: '', port: '',
-            },
-        };
+        document.addEventListener('livewire:navigated', function () {
+            const mailProviderPresets = {
+                gmail: {
+                    address: 'Gmail Address', password: 'App Password',
+                    hint: 'Gmail app password (Google One paid seat), not the account login password.',
+                    host: 'smtp.gmail.com', port: 587,
+                },
+                nic: {
+                    address: 'NIC Email Address', password: 'Password',
+                    hint: 'Your NIC email password — or an app-specific password if two-factor authentication is enabled.',
+                    host: 'smtp.mgovcloud.in', port: 587,
+                },
+                custom: {
+                    address: 'SMTP Username / From Address', password: 'SMTP Password',
+                    hint: 'Password for the SMTP account above.',
+                    host: '', port: '',
+                },
+            };
 
-        document.getElementById('provider')?.addEventListener('change', function () {
-            const preset = mailProviderPresets[this.value];
-            document.getElementById('address-label').textContent = preset.address;
-            document.getElementById('password-label').textContent = preset.password;
-            document.getElementById('password-hint').textContent = preset.hint;
-            document.getElementById('smtp_host').value = preset.host;
-            document.getElementById('smtp_port').value = preset.port;
+            document.getElementById('provider')?.addEventListener('change', function () {
+                const preset = mailProviderPresets[this.value];
+                document.getElementById('address-label').textContent = preset.address;
+                document.getElementById('password-label').textContent = preset.password;
+                document.getElementById('password-hint').textContent = preset.hint;
+                document.getElementById('smtp_host').value = preset.host;
+                document.getElementById('smtp_port').value = preset.port;
+            });
         });
     </script>
 </x-layout>

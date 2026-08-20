@@ -34,6 +34,7 @@ class User extends Authenticatable
         'campaigns.send',
         'recipients.import',
         'activity-logs.view',
+        'test-email.send',
     ];
 
     protected function casts(): array

@@ -20,8 +20,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
 <script>
-    (function () {
-        const quill = new Quill('#quill-editor', { theme: 'snow' });
+    document.addEventListener('livewire:navigated', function () {
+        const editorEl = document.getElementById('quill-editor');
+        if (! editorEl) return;
+
+        const quill = new Quill(editorEl, { theme: 'snow' });
         const hidden = document.getElementById('body-input');
         quill.on('text-change', function () {
             hidden.value = quill.root.innerHTML;
@@ -29,5 +32,5 @@
         hidden.closest('form')?.addEventListener('submit', function () {
             hidden.value = quill.root.innerHTML;
         });
-    })();
+    });
 </script>
