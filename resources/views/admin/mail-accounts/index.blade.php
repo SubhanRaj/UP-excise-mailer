@@ -17,7 +17,7 @@
                     <tr>
                         <th class="text-left px-4 py-3">Address</th>
                         <th class="text-left px-4 py-3">Section</th>
-                        <th class="text-left px-4 py-3">Throttle</th>
+                        <th class="text-left px-4 py-3">Delay Between Sends</th>
                         <th class="text-left px-4 py-3">Daily Cap</th>
                         <th class="text-left px-4 py-3">Status</th>
                         <th class="text-right px-4 py-3">Actions</th>

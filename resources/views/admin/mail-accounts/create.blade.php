@@ -53,7 +53,7 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label class="field-label">Throttle (seconds between sends)</label>
+                    <label class="field-label">Delay Between Sends (seconds)</label>
                     <input type="number" name="throttle_seconds" value="{{ old('throttle_seconds', 4) }}" required class="field-input @error('throttle_seconds') field-error @enderror">
                     @error('throttle_seconds')<p class="field-err-msg">{{ $message }}</p>@enderror
                 </div>

@@ -20,15 +20,15 @@
             <div>
                 <label class="field-label">File</label>
                 <input type="file" wire:model="file" accept=".csv,.xlsx,.pdf" required class="field-input @error('file') field-error @enderror">
-                <p class="field-hint">CSV, XLSX, or a text-layer PDF (scanned/image PDFs won't parse — no OCR). Max 10MB.</p>
+                <p class="field-hint">CSV, Excel, or a PDF you can select text in (a scanned or photographed PDF won't work). Max 10MB.</p>
                 @error('file')<p class="field-err-msg">{{ $message }}</p>@enderror
-                <div wire:loading wire:target="upload" class="text-xs text-slate-400 mt-2">Parsing file…</div>
+                <div wire:loading wire:target="upload" class="text-xs text-slate-400 mt-2">Reading file…</div>
             </div>
 
             <div class="flex items-center gap-3 pt-2">
                 <button type="submit" wire:loading.attr="disabled" wire:target="upload"
                     class="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors">
-                    Parse File
+                    Upload File
                 </button>
                 <a href="{{ route('recipient-lists.index') }}" wire:navigate class="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Cancel</a>
             </div>
