@@ -129,7 +129,7 @@
             <div>
                 <label class="field-label">Use a Saved Template</label>
                 <div class="flex items-center gap-2">
-                    <select wire:model="templateId" wire:change="updatedTemplateId" class="field-input">
+                    <select wire:model.live="templateId" class="field-input">
                         <option value="">— Write it myself —</option>
                         @foreach($templates as $template)
                         <option value="{{ $template->id }}">{{ $template->name }}</option>
