@@ -507,6 +507,29 @@ the toggle makes the choice self-evident, no prose needed. Verified with a
 Feature test: SuperAdmin sends via a mail_account, asserts `CampaignMail`
 actually dispatched through the fake.
 
+### Section contact fields + "Task Force" → "Task Force Section" (2026-08-20, done)
+
+- Added nullable `sections.email` and `sections.head_name` columns
+  (`2026_08_20_000116_add_contact_fields_to_sections_table.php`) —
+  `email` is for *receiving* mail addressed to that section (e.g. a task
+  force asking other sections for data), distinct from a `mail_accounts`
+  row which is for *sending* through Gmail SMTP; the create/edit forms
+  say so explicitly since the two are easy to conflate. Wired into
+  `Section`'s `#[Fillable]`, both `StoreSectionRequest`/
+  `UpdateSectionRequest`, the create/edit forms, and two new columns on
+  the sections index table.
+- Renamed the seeded "Task Force" section to "Task Force Section" (user:
+  it should read as a section name like the others, not a standalone
+  label) — `SectionSeeder` updated for fresh installs, plus a one-off
+  data migration (`2026_08_20_000117_rename_task_force_section.php`)
+  updating the row already seeded on the live DB (`slug` `task-force` →
+  `task-force-section`), reversible via `down()`.
+- Dropped two more layman-facing technical asides the user flagged as
+  meaningless jargon: "Just fills in the SMTP fields below — everything
+  is stored as plain SMTP settings" (Add Mail Account) and its edit-page
+  twin — the Provider dropdown visibly filling in the fields below it
+  needed no explanation.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a

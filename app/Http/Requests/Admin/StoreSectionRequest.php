@@ -16,6 +16,8 @@ class StoreSectionRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:150', 'unique:sections,name'],
+            'email' => ['nullable', 'email', 'max:150'],
+            'head_name' => ['nullable', 'string', 'max:150'],
         ];
     }
 

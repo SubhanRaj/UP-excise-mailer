@@ -28,7 +28,7 @@ class SectionSeeder extends Seeder
             'Alcohol Section',
             'Excise Intelligence Bureau',
             'Legal Section',
-            'Task Force',
+            'Task Force Section',
         ];
 
         foreach ($sections as $name) {

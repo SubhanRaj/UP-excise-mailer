@@ -16,6 +16,8 @@
                 <thead class="bg-slate-50 dark:bg-slate-900/50 text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                     <tr>
                         <th class="text-left px-4 py-3">Name</th>
+                        <th class="text-left px-4 py-3">Email</th>
+                        <th class="text-left px-4 py-3">Head</th>
                         <th class="text-left px-4 py-3">Users</th>
                         <th class="text-left px-4 py-3">Mail Accounts</th>
                         <th class="text-right px-4 py-3">Actions</th>
@@ -25,6 +27,8 @@
                     @forelse($sections as $section)
                     <tr>
                         <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{{ $section->name }}</td>
+                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $section->email ?: '—' }}</td>
+                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $section->head_name ?: '—' }}</td>
                         <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $section->users_count }}</td>
                         <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $section->mail_accounts_count }}</td>
                         <td class="px-4 py-3 text-right">
@@ -45,7 +49,7 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="4" class="px-4 py-8 text-center text-slate-400 dark:text-slate-500">No sections yet.</td></tr>
+                    <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400 dark:text-slate-500">No sections yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>

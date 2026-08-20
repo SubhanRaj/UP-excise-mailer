@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['name', 'slug'])]
+#[Fillable(['name', 'slug', 'email', 'head_name'])]
 class Section extends Model
 {
     use SoftDeletes;
