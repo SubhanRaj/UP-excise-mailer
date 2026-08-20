@@ -971,6 +971,22 @@ php-flasher's own styled/themed toast. SweetAlert2 itself is kept for
 the delete/deactivate **confirm dialogs** only (a genuinely different
 UX need — a modal, not a toast), which is unaffected by any of this.
 
+### Template editor upgrade: real toolbar, variable dropdown, preview (2026-08-20, done)
+
+Quill was previously initialized with zero toolbar config. Added: a
+configured toolbar (headers, bold/italic/underline/strike, text/bg
+color, lists, align, link, blockquote, clean); an "Insert a variable…"
+dropdown next to the editor that inserts the token at the cursor
+(reuses `MailTemplate::variableToken()`, same brace-safety pattern as
+the campaign builder's chip picker); and a "Preview with sample data"
+button rendering the current (unsaved) Subject + Body with placeholder
+values substituted client-side, in a SweetAlert2 modal (regex mirrors
+`MailTemplate::render()`'s server-side pattern exactly). Deliberately
+left out image embedding — base64-embedded images bloat every
+recipient's email and hurt deliverability on Gmail/NIC relays; if
+wanted later it should upload to storage and reference a URL, not
+embed.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
