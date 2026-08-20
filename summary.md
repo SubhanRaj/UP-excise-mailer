@@ -530,6 +530,33 @@ actually dispatched through the fake.
   twin — the Provider dropdown visibly filling in the fields below it
   needed no explanation.
 
+### Full jargon sweep across the UI (2026-08-20, done)
+
+User asked to fix "such jargon" everywhere, not just where already caught —
+ran an Explore-agent audit of every `resources/views/**/*.blade.php` for
+developer terminology or implementation-detail explanations a layman
+wouldn't need. Fixed everything the audit flagged as real:
+- **Templates create/edit** — the variable-placeholder hint still showed
+  raw `{{ district_name }}` (underscore_case) even though the campaign
+  builder's own variable picker was already fixed to plain words back in
+  an earlier round; now reads "Type a word in double curly braces... e.g.
+  `{{ district }}`" in both the Subject and Body hints, both pages.
+- **Mail Accounts create/edit/index** — "Throttle (seconds between
+  sends)" → "Delay Between Sends (seconds)" (label, and the index table
+  header). SMTP Host/Port field *labels* were kept — they sit directly
+  above a concrete input, unlike a prose hint, and an admin configuring a
+  literal mail server needs to know which value goes where.
+- **Recipient list import wizard** — "text-layer PDF ... no OCR" →
+  "a PDF you can select text in (a scanned or photographed PDF won't
+  work)"; "Parse File" button → "Upload File"; "Parsing file…" loading
+  text → "Reading file…" (matches the officer-directory import wizard's
+  existing wording).
+- Reviewed and left as-is: Sections' email/head hint (plain and useful,
+  not an implementation detail), Designations/Users/Recipients hints
+  (already plain), Activity Log's IP/Path/Status columns (legitimate
+  SuperAdmin audit-tool columns, not layman-facing), and the officer
+  directory wizard's JEC/DEC/DEO labels (department terms, not dev jargon).
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a

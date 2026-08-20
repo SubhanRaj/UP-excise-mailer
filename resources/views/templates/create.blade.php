@@ -14,14 +14,14 @@
             <div>
                 <label class="field-label">Subject</label>
                 <input type="text" name="subject" value="{{ old('subject') }}" required class="field-input @error('subject') field-error @enderror">
-                <p class="field-hint">Use <code>@{{ variable }}</code> placeholders — e.g. @{{ district_name }}.</p>
+                <p class="field-hint">Type a word in double curly braces to fill it in per recipient — e.g. @{{ district }}.</p>
                 @error('subject')<p class="field-err-msg">{{ $message }}</p>@enderror
             </div>
 
             <div>
                 <label class="field-label">Body</label>
                 @include('templates._editor', ['value' => old('body', '')])
-                <p class="field-hint">Use <code>@{{ variable }}</code> placeholders — e.g. @{{ district_name }} — anywhere in the text, filled in per recipient at send time.</p>
+                <p class="field-hint">Type a word in double curly braces anywhere in the text to fill it in per recipient — e.g. @{{ district }}.</p>
                 @error('body')<p class="field-err-msg">{{ $message }}</p>@enderror
             </div>
 
