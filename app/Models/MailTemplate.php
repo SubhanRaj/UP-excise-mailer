@@ -31,4 +31,17 @@ class MailTemplate extends Model
             return array_key_exists($matches[1], $values) ? (string) $values[$matches[1]] : $matches[0];
         }, $text);
     }
+
+    /**
+     * Builds a literal "{{name}}" placeholder string. Exists so Blade views never write the
+     * two literal brace-pairs themselves — Blade's echo compiler scans the raw .blade.php file
+     * text for `{{ ... }}` before it understands PHP string literals or @php blocks, so writing
+     * '{{'.$var.'}}' directly in a view (even inside @php()) gets mangled into the compiled PHP
+     * source itself. Keeping the concatenation here, in a plain .php file Blade never compiles,
+     * sidesteps that entirely.
+     */
+    public static function variableToken(string $name): string
+    {
+        return '{{'.$name.'}}';
+    }
 }

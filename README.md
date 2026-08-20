@@ -13,10 +13,11 @@ original build plan, [summary.md](./summary.md) for build progress,
 ## Stack
 
 PHP 8.5, Laravel 13, MariaDB, Livewire 4, Tailwind (Play CDN) + Tabler Icons,
-Fortify (routes disabled, password+OTP auth hand-rolled), Resend (system/auth
-mail from `noreply@mail.exciseup.in`), dynamic Gmail SMTP per HQ section
-(campaign mail), Apache + Cloudflare Tunnel (`cloudflared`) at
-`mailer.exciseup.in`.
+Quill (CDN, template/campaign rich-text editing), Fortify (routes disabled,
+password+OTP auth hand-rolled), Resend (system/auth mail from
+`noreply@mail.exciseup.in`), dynamic Gmail SMTP per HQ section (campaign
+mail), `openspout`/`smalot/pdfparser` (CSV/XLSX/PDF recipient import),
+Apache + Cloudflare Tunnel (`cloudflared`) at `mailer.exciseup.in`.
 
 ## Local setup
 
@@ -44,5 +45,8 @@ Per-section Gmail SMTP app passwords are entered through the app itself
 
 ## Status
 
-Early scaffold — see [summary.md](./summary.md) for exactly what's built and
-what's next.
+Live at `https://mailer.exciseup.in`. Auth, admin CRUD (sections, mail
+accounts, designations, users, activity log), the recipient directory,
+mail templates, recipient-list import, and the campaign builder are all
+built and wired up — see [summary.md](./summary.md) for exactly what's
+built, what's next, and the build history.

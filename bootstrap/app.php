@@ -18,6 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // generating (or validating against) http:// links. Matches ~/Sites/pdf-markdown-pipeline
         // and ~/Sites/excise-budget-tracker.
         $middleware->trustProxies(at: ['127.0.0.1']);
+
+        $middleware->alias([
+            'is_admin' => \App\Http\Middleware\IsAdmin::class,
+            'privilege' => \App\Http\Middleware\HasPrivilege::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

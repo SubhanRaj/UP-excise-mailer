@@ -39,7 +39,7 @@ arbitrary, it's probably copied from one of these two; check there first.
 | `sections` | HQ sections (e.g. Enforcement, Admin) — each holds users and one or more `mail_accounts`. |
 | `mail_accounts` | Gmail address + `app_password` (encrypted cast) per section. `throttle_seconds` / `daily_send_cap` bound how fast a campaign sends. |
 | `designations` | Job title + `default_privileges` preset, same shape as both sibling apps. |
-| `users` | `role` (SuperAdmin/Admin/User) + `privileges` JSON, `designation_id`, `section_id`. `password` nullable until invite accepted. |
+| `users` | `role` (SuperAdmin/Admin/User) + `privileges` JSON, `designation_id` (standard rank), `post` (free-text specific posting/charge, e.g. "Prevention & Enforcement" — distinct from `designation_id`, same split as `~/Sites/pdf-markdown-pipeline`'s `users.post`), `section_id`. `password` nullable until invite accepted. |
 | `activity_logs` | Full audit trail — every non-GET authenticated request + login/logout, `ActivityLog::record()` (never throws). |
 | `recipient_lists` / `recipient_list_items` | Ad-hoc imported recipient groups (CSV/XLSX/PDF), separate from the fixed zone/division/district directory. |
 | `mail_templates` | Subject + HTML body with `{{variable}}` placeholders, rendered via `MailTemplate::render()`. |

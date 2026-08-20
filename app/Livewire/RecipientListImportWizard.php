@@ -1,0 +1,127 @@
+<?php
+
+namespace App\Livewire;
+
+use App\Models\RecipientList;
+use App\Models\RecipientListItem;
+use App\Services\RecipientImportParser;
+use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Validate;
+use Livewire\Component;
+use Livewire\WithFileUploads;
+
+class RecipientListImportWizard extends Component
+{
+    use WithFileUploads;
+
+    public int $step = 1;
+
+    #[Validate('required|string|max:150')]
+    public string $listName = '';
+
+    #[Validate('required|file|mimes:csv,txt,xlsx,pdf|max:10240')]
+    public $file = null;
+
+    public array $headers = [];
+
+    public array $rows = [];
+
+    public string $nameColumn = '';
+
+    public string $emailColumn = '';
+
+    public function upload(): void
+    {
+        $this->validate();
+
+        $extension = $this->file->getClientOriginalExtension();
+        $parsed = app(RecipientImportParser::class)->parse($this->file->getRealPath(), $extension);
+
+        $this->headers = $parsed['headers'];
+        $this->rows = $parsed['rows'];
+
+        if (empty($this->rows)) {
+            $this->addError('file', 'No rows could be read from this file.');
+
+            return;
+        }
+
+        // PDF extraction already produces exactly [name, email] — nothing to map.
+        if ($extension === 'pdf') {
+            $this->nameColumn = '0';
+            $this->emailColumn = '1';
+            $this->step = 3;
+
+            return;
+        }
+
+        $this->emailColumn = (string) $this->guessColumn($this->headers, ['email', 'e-mail']);
+        $this->nameColumn = (string) $this->guessColumn($this->headers, ['name']);
+        $this->step = 2;
+    }
+
+    public function confirmMapping(): void
+    {
+        $this->validate([
+            'emailColumn' => 'required',
+        ]);
+
+        $this->step = 3;
+    }
+
+    public function save(): void
+    {
+        $this->validate();
+
+        $nameIdx = $this->nameColumn === '' ? null : (int) $this->nameColumn;
+        $emailIdx = (int) $this->emailColumn;
+
+        $items = collect($this->rows)
+            ->map(fn (array $row) => [
+                'name' => $nameIdx !== null ? ($row[$nameIdx] ?? null) : null,
+                'email' => trim((string) ($row[$emailIdx] ?? '')),
+            ])
+            ->filter(fn (array $r) => filter_var($r['email'], FILTER_VALIDATE_EMAIL))
+            ->values();
+
+        if ($items->isEmpty()) {
+            $this->addError('emailColumn', 'No valid email addresses found in that column.');
+
+            return;
+        }
+
+        DB::transaction(function () use ($items) {
+            $list = RecipientList::create([
+                'name' => $this->listName,
+                'source_type' => $this->file->getClientOriginalExtension(),
+                'uploaded_by' => auth()->id(),
+                'original_filename' => $this->file->getClientOriginalName(),
+            ]);
+
+            $list->items()->createMany($items->all());
+        });
+
+        flash()->success("Recipient list \"{$this->listName}\" imported — {$items->count()} recipient(s).");
+
+        $this->redirectRoute('recipient-lists.index', navigate: true);
+    }
+
+    /** @param string[] $labels */
+    private function guessColumn(array $headers, array $labels): ?int
+    {
+        foreach ($headers as $i => $header) {
+            foreach ($labels as $label) {
+                if (str_contains(strtolower($header), $label)) {
+                    return $i;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public function render()
+    {
+        return view('livewire.recipient-list-import-wizard');
+    }
+}

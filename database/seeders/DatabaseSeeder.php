@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(DesignationSeeder::class);
         $this->call(GeoOrgSeeder::class);
+        $this->call(SectionSeeder::class);
 
         User::firstOrCreate(
             ['email' => 'shubhanraj2002@gmail.com'],
