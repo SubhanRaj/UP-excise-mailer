@@ -43,7 +43,7 @@ class MailAccount extends Model
             'transport' => 'smtp',
             'host' => $this->smtp_host,
             'port' => $this->smtp_port,
-            'encryption' => 'tls',
+            'encryption' => $this->smtp_port === 465 ? 'ssl' : 'tls',
             'username' => $this->gmail_address,
             'password' => $this->app_password,
         ];
