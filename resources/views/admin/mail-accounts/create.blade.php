@@ -97,7 +97,7 @@
     </div>
 
     <script>
-        document.addEventListener('livewire:navigated', function () {
+        (function () {
             const mailProviderPresets = {
                 gmail: {
                     address: 'Gmail Address', password: 'App Password',
@@ -132,6 +132,6 @@
             document.getElementById('auth_mode')?.addEventListener('change', function () {
                 document.getElementById('smtp_port').value = this.value === 'ssl' ? 465 : 587;
             });
-        });
+        })();
     </script>
 </x-layout>

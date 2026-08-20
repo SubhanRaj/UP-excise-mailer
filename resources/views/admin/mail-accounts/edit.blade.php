@@ -103,7 +103,7 @@
     </div>
 
     <script>
-        document.addEventListener('livewire:navigated', function () {
+        (function () {
             const mailProviderPresets = {
                 gmail: { address: 'Gmail Address', password: 'App Password', host: 'smtp.gmail.com', port: 587 },
                 nic: { address: 'NIC Email Address', password: 'Password', host: 'smtp.mgovcloud.in', port: 587 },
@@ -124,6 +124,6 @@
             document.getElementById('auth_mode')?.addEventListener('change', function () {
                 document.getElementById('smtp_port').value = this.value === 'ssl' ? 465 : 587;
             });
-        });
+        })();
     </script>
 </x-layout>

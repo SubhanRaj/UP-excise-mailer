@@ -20,7 +20,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
 <script>
-    document.addEventListener('livewire:navigated', function () {
+    (function () {
         const editorEl = document.getElementById('quill-editor');
         if (! editorEl) return;
 
@@ -32,5 +32,5 @@
         hidden.closest('form')?.addEventListener('submit', function () {
             hidden.value = quill.root.innerHTML;
         });
-    });
+    })();
 </script>
