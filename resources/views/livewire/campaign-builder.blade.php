@@ -328,7 +328,17 @@
             </div>
 
             <div class="flex items-center gap-3 pt-2">
-                <button type="button" wire:click="confirmAndQueue" wire:loading.attr="disabled" wire:target="confirmAndQueue"
+                <button type="button"
+                    x-on:click="Swal.fire({
+                        title: 'Send this campaign?',
+                        text: 'This will email {{ $this->recipientCount }} recipient(s) now — this can\'t be undone.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#4f46e5',
+                        cancelButtonColor: '#64748b',
+                        confirmButtonText: 'Yes, send it',
+                    }).then((result) => { if (result.isConfirmed) $wire.confirmAndQueue() })"
+                    wire:loading.attr="disabled" wire:target="confirmAndQueue"
                     class="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors">
                     Confirm &amp; Send
                 </button>

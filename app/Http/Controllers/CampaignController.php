@@ -17,7 +17,10 @@ class CampaignController extends Controller
     public function index(): View
     {
         $campaigns = Campaign::with(['mailAccount', 'createdBy'])
-            ->withCount('recipients')
+            ->withCount([
+                'recipients',
+                'recipients as sent_count' => fn ($q) => $q->where('status', 'sent'),
+            ])
             ->latest()
             ->paginate(20);
 

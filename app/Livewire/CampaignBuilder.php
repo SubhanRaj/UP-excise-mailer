@@ -77,6 +77,10 @@ class CampaignBuilder extends Component
 
     public ?string $zipExtractDir = null;
 
+    // Set once confirmAndQueue() actually dispatches sends — guards against a second
+    // "Confirm & Send" click (double-submit, stale back-button) firing the same batch twice.
+    public bool $queued = false;
+
     public function goToStep(int $step): void
     {
         $this->step = $step;
@@ -211,6 +215,11 @@ class CampaignBuilder extends Component
 
     public function confirmAndQueue(): void
     {
+        if ($this->queued) {
+            return;
+        }
+        $this->queued = true;
+
         $account = MailAccount::findOrFail($this->mailAccountId);
         abort_unless(auth()->user()->canUseMailAccount($account), 403);
 

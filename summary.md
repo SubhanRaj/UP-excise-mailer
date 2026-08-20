@@ -1081,6 +1081,51 @@ un-mapped case. Verified with a Feature test parsing a mixed comma/
 newline/duplicate-containing input down to the correct 3 unique
 addresses.
 
+### Idempotent campaign sending + inline send progress (2026-08-20, done)
+
+User: mid-campaign, asked that sending be made idempotent (a second
+"Confirm & Send" — double-click, stale back-nav — shouldn't re-queue
+the same batch) and that a real resend require an explicit SweetAlert2
+confirm, not fire silently. Added a `queued` bool on `CampaignBuilder`
+checked/set at the top of `confirmAndQueue()` (no-op past the first
+call for that component instance), and wrapped the "Confirm & Send"
+button in a SweetAlert2 confirm (Alpine `x-on:click`, ships bundled
+with Livewire — no new CDN) that only calls `$wire.confirmAndQueue()`
+on confirm. The per-recipient "Retry" button on a failed row got the
+same `data-confirm="..."` treatment the app's delete/deactivate forms
+already use (delegated listener in `components/layout.blade.php`).
+Also: the Campaigns list badge just said "Sending" with no indication
+of progress on a large batch — `CampaignController::index()` now pulls
+a `sent_count` alongside the existing `recipients_count` via a second
+`withCount()` closure, and the list shows "Sent 41 of 75" instead of a
+static label while `status` is `sending`/`queued`.
+
+### Live incident: NIC/mGovCloud (Zoho) blocked the Task Force sending mailbox (2026-08-20, ongoing — not a code bug)
+
+The 7 recipients that failed at the tail of the 2026-08-20 75-district
+campaign (see the "campaign status never left queued" entry above)
+were initially assumed to be `throttle_seconds` (4s) tripping Zoho's
+per-message rate limit — bumped `redacted-account@example.gov.in`'s
+`throttle_seconds` to 20 and re-queued all 7 with a matching 20s stagger
+via `SendCampaignRecipientMail::dispatch(...)->delay(...)` (one-off,
+run directly in tinker — no new UI for this). All 7 failed again with
+the *identical* `550 5.4.6 Unusual sending activity detected` error
+despite proper spacing, which ruled out a simple rate-gap problem. A
+follow-up test send confirmed the real cause: Zoho had escalated to a
+hard account-level block — bounces now show `554 5.1.8 Sender Address
+Blocked` (confirmed by the user directly in mGovCloud Workspace's
+mailer-daemon bounce notices). This is entirely Zoho/NIC-side; nothing
+in this app caused or can fix it. **Left the 7 recipients as `failed`
+and stopped sending anything further from this account** — repeated
+attempts while flagged risk extending the block rather than clearing
+it. User is following up directly with the department's DA admin and
+NIC (mGovCloud usage-policy page: `mgovcloud.in/mail/help/usage-
+policy.html`) to get the block lifted and ask about a standing
+higher-volume allowance, since this section needs to send to many
+recipients regularly. No code change needed once that's granted — just
+raise `throttle_seconds` / set `daily_send_cap` on that Mail Account
+row (Admin → Mail Accounts) to whatever NIC approves.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
