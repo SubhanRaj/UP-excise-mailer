@@ -987,6 +987,34 @@ recipient's email and hurt deliverability on Gmail/NIC relays; if
 wanted later it should upload to storage and reference a URL, not
 embed.
 
+### Confirmed real sends never use the logged-in user's name; fixed campaign template selection (2026-08-20, done)
+
+User was alarmed seeing `{{officer}}` render as "Joint Task Force" (the
+logged-in admin) and asked to check whether a real send could do that
+— genuinely worth stopping to verify rather than just asserting no.
+Checked `CampaignBuilder.php` directly: `officer` is *always* built
+from `Zone/Division/District::officerDisplayName()` per the actual
+recipient (lines 326-350), with zero code path anywhere touching
+`auth()->user()`. The alarming value came from the Template editor's
+new **Preview with sample data** button (added this session) — its
+placeholder data used the logged-in admin's own name for `officer`,
+which was misleading (looked like real send behavior when it wasn't).
+Fixed: sample values are now obviously-fake placeholders ("Sample
+Officer Name", "Sample Recipient Name") instead.
+
+**Also fixed a real error hit picking a template in the campaign
+builder**: `Unable to call lifecycle method [updatedTemplateId]
+directly` — the template `<select>` had both `wire:model="templateId"`
+*and* `wire:change="updatedTemplateId"`, directly invoking a Livewire
+magic lifecycle-hook method by name, which Livewire 4 explicitly
+disallows (`updated{Property}()` is meant to fire automatically when
+the bound property changes, never be called directly). The `wire:change`
+was almost certainly a workaround for the property not updating live
+in the first place — `wire:model` alone is deferred by default. Correct
+fix: `wire:model.live="templateId"`, `wire:change` removed entirely.
+Verified with a Livewire test: selecting a template now correctly
+fills in Subject/Body without erroring.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a

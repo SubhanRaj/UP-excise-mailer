@@ -68,10 +68,13 @@
             this.value = '';
         });
 
+        // Deliberately obvious placeholders, not the logged-in admin's own name — a real send
+        // never uses that (officer always comes from the actual recipient's district/division/
+        // zone record), and using it here could look like that's how a real send behaves.
         const sampleVars = {
             district: 'Sample District', division: 'Sample Division', zone: 'Sample Zone',
-            officer: '{{ auth()->user()->name }}', cug: '9876543210',
-            name: '{{ auth()->user()->name }}', email: 'you@example.com',
+            officer: 'Sample Officer Name', cug: '9876543210',
+            name: 'Sample Recipient Name', email: 'you@example.com',
         };
 
         function renderSample(text) {
