@@ -12,7 +12,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Cloudflare terminates TLS at its edge and cloudflared forwards to this app over plain
+        // HTTP on loopback — trust only that hop's X-Forwarded-* headers so url()/redirect()/
+        // signed-URL validation correctly know the original request was HTTPS, instead of
+        // generating (or validating against) http:// links. Matches ~/Sites/pdf-markdown-pipeline
+        // and ~/Sites/excise-budget-tracker.
+        $middleware->trustProxies(at: ['127.0.0.1']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
