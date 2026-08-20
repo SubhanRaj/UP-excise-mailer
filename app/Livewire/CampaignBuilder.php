@@ -233,7 +233,14 @@ class CampaignBuilder extends Component
 
         $singleFilePath = null;
         if ($this->wantsAttachment && $this->attachmentMode === 'single_file' && $this->singleFile) {
-            $singleFilePath = $this->singleFile->store('campaign-attachments', 'local');
+            // store()'s default random name would show up as the attachment filename on the
+            // recipient's end — keep the original name, same as the zip flow's extracted files
+            // (both nest under a uniqid() dir instead to avoid collisions).
+            $singleFilePath = $this->singleFile->storeAs(
+                'campaign-attachments/'.uniqid(),
+                $this->singleFile->getClientOriginalName(),
+                'local'
+            );
         }
 
         // ponytail: counts today's already-sent rows once per queue action, not locked against
