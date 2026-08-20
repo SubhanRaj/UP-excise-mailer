@@ -17,7 +17,13 @@
             </select>
             @error('mailAccountId')<p class="field-err-msg">{{ $message }}</p>@enderror
             @if($mailAccounts->isEmpty())
-            <p class="field-hint text-amber-600 dark:text-amber-400">No mail account is set up for you yet — ask a SuperAdmin to add one under Mail Accounts.</p>
+            <p class="field-hint text-amber-600 dark:text-amber-400">
+                @if(auth()->user()->isAdmin())
+                    No mail account exists yet — add one under Mail Accounts.
+                @else
+                    No mail account is set up for you yet — ask a SuperAdmin to add one under Mail Accounts.
+                @endif
+            </p>
             @endif
             @endif
         </div>
