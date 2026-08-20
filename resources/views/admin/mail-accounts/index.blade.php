@@ -38,10 +38,13 @@
                         <td class="px-4 py-3 text-right">
                             <div class="flex items-center justify-end gap-2">
                                 @if(auth()->user()->hasPrivilege('test-email.send'))
-                                <a href="{{ route('campaigns.test-send', ['mailAccountId' => $account->id]) }}" wire:navigate
-                                   class="text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors" title="Send Test Email">
-                                    <i class="ti ti-flask text-base"></i>
-                                </a>
+                                <form method="POST" action="{{ route('campaigns.test-send.prefill') }}" class="inline">
+                                    @csrf
+                                    <input type="hidden" name="mail_account_id" value="{{ $account->id }}">
+                                    <button type="submit" class="text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors" title="Send Test Email">
+                                        <i class="ti ti-flask text-base"></i>
+                                    </button>
+                                </form>
                                 @endif
                                 <a href="{{ route('admin.mail-accounts.edit', $account) }}" wire:navigate
                                    class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="Edit">

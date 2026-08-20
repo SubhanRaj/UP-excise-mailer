@@ -882,6 +882,48 @@ campaigns.send, recipients.import, activity-logs.view) but
 `test-email.send` was simply never added to the list — not a bug,
 just never granted. Added it directly to their `privileges` column.
 
+### Toast on Livewire actions, loading spinner, mail account ID out of the URL (2026-08-20, done)
+
+Three real issues from one round of user testing:
+
+1. **No toast after Send Test Email** — nothing to do with the CDN.
+   This app only has `php-flasher/flasher-laravel` (confirmed: the
+   dedicated Livewire bridge package, `php-flasher/flasher-livewire`,
+   is abandoned upstream with no real replacement shipped into
+   `flasher-laravel`). `flash()->success()`/`error()` render via a
+   server-side Blade directive (`@flasher_render`) on the *next full
+   page load* — a `wire:click` action that doesn't redirect anywhere
+   never gets one, so the flashed message just sits unused in the
+   session. Fixed by dispatching a Livewire browser event instead
+   (`$this->dispatch('toast', type: ..., message: ...)`) and rendering
+   it as a SweetAlert2 toast via one listener registered on
+   `livewire:init` in the shared layout (reuses the SweetAlert2 CDN
+   already loaded for the confirm-dialog fix earlier this session) —
+   generic and reusable by any future Livewire component, not
+   test-email-specific.
+2. **No loading feedback on Send Test Email** — the button already had
+   `wire:loading.attr="disabled"` but only a subtle opacity change, easy
+   to miss and double-click. Added a spinner icon + "Sending…" text
+   swap via `wire:loading`/`wire:loading.remove`.
+3. **`?mailAccountId=1` in the URL** — user has mitigated this pattern
+   in every sibling app; exposing a database ID in a GET query string
+   (URL bar, browser history, referrer headers, server access logs) for
+   what's really a one-off action isn't good practice even though it
+   was already authorization-checked server-side
+   (`canUseMailAccount()`), so not an actual IDOR — still fixed to match
+   the user's standing convention. The "Send Test" button on Mail
+   Accounts is now a POST form (`CampaignController::prefillTestSend()`,
+   new route `campaigns.test-send.prefill`) that validates + authorizes
+   the account, stashes its ID in `session()` (one-time —
+   `TestEmailSender::mount()` reads it via `session()->pull(...)`, so
+   it's consumed immediately and never lingers), then redirects to the
+   plain `/campaigns/test-send` with no query string at all. Verified:
+   the redirect target carries zero query params, and a cross-section
+   account ID gets a 403 rather than being silently accepted.
+   Pagination's `?page=N` links are unaffected/unchanged — those aren't
+   sensitive/exploitable IDs, just a page number, which is the
+   distinction the user actually drew.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a

@@ -43,9 +43,11 @@ class TestEmailSender extends Component
         $this->sendVia = $user->isAdmin() ? 'system' : 'mail_account';
         $this->templateId = (string) (MailTemplate::where('name', 'Test Email — Do Not Action')->value('id') ?? '');
 
-        // Arrived from a "Send Test" link on a specific Mail Accounts row — pre-select that
-        // account instead of making them pick it again from the dropdown.
-        $requestedAccountId = request()->query('mailAccountId');
+        // Arrived from a "Send Test" button on a specific Mail Accounts row — pre-select that
+        // account instead of making them pick it again from the dropdown. Passed via a POST +
+        // one-time session value (pull = read once, then forget) rather than a ?mailAccountId=
+        // query string, so an account ID never sits exposed in the URL/browser history/logs.
+        $requestedAccountId = session()->pull('test_send_mail_account_id');
         if ($requestedAccountId) {
             $account = MailAccount::find($requestedAccountId);
             if ($account && $user->canUseMailAccount($account)) {
@@ -109,14 +111,18 @@ class TestEmailSender extends Component
                 'to' => $email, 'template_id' => $template->id, 'via' => $via, 'status' => 'sent',
             ]);
 
-            flash()->success("Test email sent to {$email} via {$via}.");
+            // flash()->success() only renders on the *next full page load* (php-flasher's
+            // Blade directive is server-rendered) — this action never navigates anywhere, so
+            // a flashed message would just sit unused in the session. Dispatching a Livewire
+            // browser event instead, rendered as a toast by the listener in layout.blade.php.
+            $this->dispatch('toast', type: 'success', message: "Test email sent to {$email} via {$via}.");
         } catch (\Throwable $e) {
             ActivityLog::record('test-email.send', request(), [
                 'to' => $email, 'template_id' => $template->id, 'via' => $via, 'status' => 'failed',
                 'error' => substr($e->getMessage(), 0, 500),
             ]);
 
-            flash()->error("Test email to {$email} failed: ".substr($e->getMessage(), 0, 200));
+            $this->dispatch('toast', type: 'error', message: "Test email to {$email} failed: ".substr($e->getMessage(), 0, 200));
         }
     }
 

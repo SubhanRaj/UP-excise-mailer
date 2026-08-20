@@ -64,8 +64,10 @@
 
         <div class="flex items-center gap-3 pt-2">
             <button type="button" wire:click="send" wire:loading.attr="disabled" wire:target="send"
-                class="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors">
-                Send Test Email
+                class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors">
+                <i wire:loading wire:target="send" class="ti ti-loader-2 animate-spin text-base"></i>
+                <span wire:loading.remove wire:target="send">Send Test Email</span>
+                <span wire:loading wire:target="send">Sending…</span>
             </button>
             <a href="{{ route('campaigns.index') }}" wire:navigate class="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Back</a>
         </div>
