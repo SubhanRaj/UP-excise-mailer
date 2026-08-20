@@ -557,6 +557,38 @@ wouldn't need. Fixed everything the audit flagged as real:
   SuperAdmin audit-tool columns, not layman-facing), and the officer
   directory wizard's JEC/DEC/DEO labels (department terms, not dev jargon).
 
+### Zip-match hardened against real government filenames (2026-08-20, done)
+
+User has a real 75-file batch — one Excel workbook per district
+(`5_Shops_<DISTRICT>.xlsx`, from the department's actual data-collection
+folder) — and asked whether `zip_per_recipient` can handle it as-is.
+Checked against the real filenames and the DB's 75 district names:
+`ZipRecipientMatcher`'s old exact+Levenshtein-only matching would have
+failed on **every single file** — the shared `5_Shops_` decorative
+prefix alone pushed every Levenshtein distance past threshold, before
+even accounting for name-format mismatches (`Bhadohi` in the DB vs. the
+file's official long name `SANT_RAVIDAS_NAGAR_BHADOHI`; `Lakhimpur
+Kheri` in the DB vs. the file's short colloquial `KHERI`; `Barabanki`
+vs. the file's spaced-out `BARA_BANKI`). Added a middle tier —
+**substring containment against prefix-stripped candidates**
+(`findContains()` + `prefixStrippedCandidates()`, tried before the
+existing Levenshtein fallback) — that strips up to 3 leading
+hyphen-separated segments off the filename and checks containment in
+both directions, catching all three patterns above without hardcoding
+`5_Shops_` or any other specific prefix. Verified against the actual
+75-file folder end to end: **all 75 auto-matched correctly**, zero
+misses, zero wrong guesses (spot-checked the full mapping by eye).
+Added 3 new permanent regression cases to `ZipRecipientMatcherTest`
+(decorative prefix, official-long-name-in-file, short-file-long-
+recipient) — 7/7 passing, existing exact/fuzzy/no-match/dedup cases
+still hold.
+
+Answer for the user: **yes, zip it — no manual work needed.** Zip all 75
+`.xlsx` files as-is (original names, no renaming), pick `zip_per_recipient`
+in the campaign builder with recipient scope "Districts" → select all,
+and the confirmation table should now show all 75 auto-matched before
+Confirm & Queue. No need to bulk-upload 75 separate one-off campaigns.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a

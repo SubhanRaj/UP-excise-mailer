@@ -50,4 +50,35 @@ class ZipRecipientMatcherTest extends TestCase
         $usedFilenames = array_filter(array_column($results, 'filename'));
         $this->assertCount(1, $usedFilenames);
     }
+
+    public function test_decorative_prefix_on_filename(): void
+    {
+        $results = (new ZipRecipientMatcher())->match(
+            [1 => 'Agra', 2 => 'Barabanki'],
+            ['5_Shops_AGRA.xlsx', '5_Shops_BARA_BANKI.xlsx'],
+        );
+
+        $this->assertSame('5_Shops_AGRA.xlsx', $results[1]['filename']);
+        $this->assertSame('5_Shops_BARA_BANKI.xlsx', $results[2]['filename']);
+    }
+
+    public function test_official_long_name_matches_short_recipient_name(): void
+    {
+        $results = (new ZipRecipientMatcher())->match(
+            [1 => 'Bhadohi'],
+            ['5_Shops_SANT_RAVIDAS_NAGAR_BHADOHI.xlsx'],
+        );
+
+        $this->assertSame('5_Shops_SANT_RAVIDAS_NAGAR_BHADOHI.xlsx', $results[1]['filename']);
+    }
+
+    public function test_short_filename_matches_long_recipient_name(): void
+    {
+        $results = (new ZipRecipientMatcher())->match(
+            [1 => 'Lakhimpur Kheri'],
+            ['5_Shops_KHERI.xlsx'],
+        );
+
+        $this->assertSame('5_Shops_KHERI.xlsx', $results[1]['filename']);
+    }
 }
