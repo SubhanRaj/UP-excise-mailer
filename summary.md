@@ -731,6 +731,52 @@ is somehow `system`. Verified: a `test-email.send`-only User can send via
 their section's mail account and gets 403 attempting `sendVia=system`; a
 privilege-less User gets 403 on the route entirely.
 
+### Fixed: real sends via a mail_account were rejected as "not allowed to relay" (2026-08-20, done)
+
+Caught live via the user's own test send — auth succeeded (after
+setting an app-specific password) but the send itself then failed with
+`553 Sender is not allowed to relay emails`. Root cause: `CampaignMail`
+never set a `from()` address at all, so every send — through Resend
+*and* through a real `mail_account` — used the fixed system
+`MAIL_FROM_ADDRESS` (`noreply@mail.exciseup.in`) regardless of which
+mailbox actually authenticated over SMTP. Most relays (Gmail, and NIC's
+mGovCloud in particular, apparently strictly) refuse to relay a message
+whose From header doesn't match the authenticated account. This wasn't
+test-send-specific — it would have silently broken **every real
+campaign send** through any non-Resend mail account the moment one
+actually ran, since `SendCampaignRecipientMail` has the exact same gap
+and no live campaign had exercised this path yet. Fixed by giving
+`CampaignMail` an optional `?MailAccount $account` constructor param;
+when present, `build()` calls `->from($account->gmail_address,
+$account->section?->name)`. Both call sites (`SendCampaignRecipientMail`
+and `TestEmailSender`) now pass their resolved `$account` through.
+Sending via Resend (`$account` null) is unaffected — falls through to
+the existing `MAIL_FROM_ADDRESS` default, as before. Verified directly
+against `CampaignMail::build()`'s resulting `from` property with and
+without an account.
+
+### Connection Security (TLS/SSL) selector on Mail Accounts (2026-08-20, done)
+
+User: raw port numbers ("587 vs 465") are exactly the kind of thing a
+layman shouldn't have to know. Added a **Connection Security** dropdown
+next to SMTP Host on Add/Edit Mail Account — "TLS (port 587)" / "SSL
+(port 465)" — that fills in the SMTP Port field automatically; the port
+field itself stays editable underneath for the rare non-standard-port
+case, now captioned "filled in automatically... only change it if your
+provider uses a different port" instead of asking the admin to
+remember which number means what. Wired into the same provider-preset
+JS as the Provider dropdown (picking Gmail/NIC/Custom also sets
+Connection Security to match), and the Edit page pre-selects the right
+option from the account's already-stored port. `MailAccount::
+mailerConfig()` already derived `encryption` from the port number (see
+the NIC-provider fix earlier this session) — this is a UI-only
+addition, the port stays the single source of truth.
+
+Also confirmed, in response to the user's question: app passwords are
+stored via Laravel's `encrypted` cast and only edge whitespace is
+trimmed by the framework's default `TrimStrings` middleware — mixed-
+case alphanumeric passwords pass through byte-for-byte, no bug there.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
