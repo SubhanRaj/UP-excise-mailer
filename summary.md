@@ -589,6 +589,15 @@ in the campaign builder with recipient scope "Districts" → select all,
 and the confirmation table should now show all 75 auto-matched before
 Confirm & Queue. No need to bulk-upload 75 separate one-off campaigns.
 
+This isn't a one-batch fix — it generalizes to any future filename
+pattern that's textually related to the district name: decorative
+prefixes/suffixes (`Report_AGRA_2027.xlsx`), long-official-vs-short-
+colloquial in either direction, spelling variants/typos, and any mix of
+underscores/hyphens/spaces/capitalization. A filename with no textual
+relation to the district at all (a bare numeric code, an unrelated
+abbreviation scheme) still shows "no match" for manual override — never
+silently wrong, always caught in the confirmation table before send.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
