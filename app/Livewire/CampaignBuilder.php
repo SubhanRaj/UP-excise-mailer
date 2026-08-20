@@ -92,6 +92,11 @@ class CampaignBuilder extends Component
         $template = MailTemplate::find($this->templateId);
         $this->subject = $template->subject ?? '';
         $this->body = $template->body ?? '';
+
+        // The Body editor lives inside a wire:ignore div (Quill owns that DOM, not Livewire),
+        // so a server-side change to $body alone never reaches the visible editor — push it in
+        // directly via a browser event instead.
+        $this->dispatch('quill-set-content', model: 'body', html: $this->body);
     }
 
     public function saveNewTemplate(): void
@@ -119,6 +124,8 @@ class CampaignBuilder extends Component
         $this->newTemplateName = '';
         $this->newTemplateSubject = '';
         $this->newTemplateBody = '';
+
+        $this->dispatch('quill-set-content', model: 'body', html: $this->body);
 
         flash()->success('Template created and selected for this campaign.');
     }

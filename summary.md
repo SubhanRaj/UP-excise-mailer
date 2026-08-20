@@ -1015,6 +1015,31 @@ fix: `wire:model.live="templateId"`, `wire:change` removed entirely.
 Verified with a Livewire test: selecting a template now correctly
 fills in Subject/Body without erroring.
 
+### Fixed: campaign builder's Body editor stayed blank after picking a template (2026-08-20, done)
+
+User: Subject fills in correctly after selecting a template, but the
+Body/Message editor stays blank. Root cause: the Quill editor
+(`livewire/_quill-editor.blade.php`) sits inside a `wire:ignore` div —
+required so Livewire's own re-rendering never fights with Quill for
+control of that DOM — which means Livewire literally never touches
+that subtree again after it first mounts. `updatedTemplateId()` (and
+`saveNewTemplate()`) set `$this->body` on the server correctly, but
+nothing ever pushed that new HTML into the *already-running* Quill
+instance sitting behind the wire:ignore wall. Subject is a plain
+`wire:model` text input, so it re-rendered fine — Body couldn't, by
+design of wire:ignore. Fixed by having both places `$this->dispatch(
+'quill-set-content', model: 'body', html: $this->body)` after setting
+`$body`, with a matching `Livewire.on('quill-set-content', ...)`
+listener in the editor partial that sets `quill.root.innerHTML`
+directly. Deliberately **not** wrapped in a `livewire:init` (or
+`livewire:navigated`) listener — same lesson as the earlier stacking-
+editor bug this session: this script re-executes fresh each time the
+step-2 block re-enters the DOM, but `livewire:init` fires exactly once
+per page load, so wrapping it there would mean the listener never
+(re-)registers for any Quill instance after the first one. Verified
+with a Livewire test asserting the `quill-set-content` event dispatches
+with the template's actual body HTML.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
