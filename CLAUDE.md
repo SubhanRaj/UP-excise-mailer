@@ -3,7 +3,10 @@
 Read [plan.md](./plan.md) first — it's the full approved build plan (context,
 domain model, auth flow, sending design, UI, deploy). This file is the living
 architecture reference; [summary.md](./summary.md) tracks what's actually
-built vs. still pending. Keep both updated as work progresses.
+built vs. still pending. See [APP_FLOW.md](./APP_FLOW.md) for Mermaid
+diagrams of auth, recipient-scope resolution, campaign send lifecycle,
+authorization, and the component map. Keep all three updated as work
+progresses.
 
 ## What this app is
 
