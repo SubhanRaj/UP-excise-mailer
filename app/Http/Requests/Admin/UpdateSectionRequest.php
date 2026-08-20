@@ -17,6 +17,8 @@ class UpdateSectionRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:150', Rule::unique('sections', 'name')->ignore($this->route('section'))],
+            'email' => ['nullable', 'email', 'max:150'],
+            'head_name' => ['nullable', 'string', 'max:150'],
         ];
     }
 

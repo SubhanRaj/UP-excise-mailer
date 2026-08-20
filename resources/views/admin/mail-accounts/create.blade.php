@@ -22,7 +22,6 @@
                         <option value="gmail">Gmail (App Password)</option>
                         <option value="custom">Custom SMTP</option>
                     </select>
-                    <p class="field-hint">Just fills in the SMTP fields below — everything is stored as plain SMTP settings.</p>
                 </div>
             </div>
 

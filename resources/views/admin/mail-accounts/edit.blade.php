@@ -22,7 +22,6 @@
                         <option value="gmail" {{ $mailAccount->smtp_host === 'smtp.gmail.com' ? 'selected' : '' }}>Gmail (App Password)</option>
                         <option value="custom" {{ $mailAccount->smtp_host !== 'smtp.gmail.com' ? 'selected' : '' }}>Custom SMTP</option>
                     </select>
-                    <p class="field-hint">Switching this just fills in the SMTP fields below.</p>
                 </div>
             </div>
 

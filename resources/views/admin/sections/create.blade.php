@@ -11,6 +11,19 @@
                 @error('name')<p class="field-err-msg">{{ $message }}</p>@enderror
             </div>
 
+            <div>
+                <label class="field-label">Section Email (optional)</label>
+                <input type="email" name="email" value="{{ old('email') }}" placeholder="section@excise.up.gov.in" class="field-input @error('email') field-error @enderror">
+                <p class="field-hint">For receiving mail, not sending — sending still goes through a Mail Account below.</p>
+                @error('email')<p class="field-err-msg">{{ $message }}</p>@enderror
+            </div>
+
+            <div>
+                <label class="field-label">Section Head (optional)</label>
+                <input type="text" name="head_name" value="{{ old('head_name') }}" placeholder="e.g. name or designation" class="field-input @error('head_name') field-error @enderror">
+                @error('head_name')<p class="field-err-msg">{{ $message }}</p>@enderror
+            </div>
+
             <div class="flex items-center gap-3 pt-2">
                 <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors">
                     Create Section
