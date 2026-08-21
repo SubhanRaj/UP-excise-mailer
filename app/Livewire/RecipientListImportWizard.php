@@ -30,8 +30,15 @@ class RecipientListImportWizard extends Component
 
     public string $emailColumn = '';
 
+    /**
+     * Livewire's update endpoint (unlike the initial page GET) isn't covered by the route's
+     * own 'recipients.import' privilege middleware, so every action method re-checks
+     * independently — matches CampaignBuilder/TestEmailSender's pattern elsewhere in this app.
+     */
     public function upload(): void
     {
+        abort_unless(auth()->user()->hasPrivilege('recipients.import'), 403);
+
         $this->validate();
 
         $extension = $this->file->getClientOriginalExtension();
@@ -62,6 +69,8 @@ class RecipientListImportWizard extends Component
 
     public function confirmMapping(): void
     {
+        abort_unless(auth()->user()->hasPrivilege('recipients.import'), 403);
+
         $this->validate([
             'emailColumn' => 'required',
         ]);
@@ -71,6 +80,8 @@ class RecipientListImportWizard extends Component
 
     public function save(): void
     {
+        abort_unless(auth()->user()->hasPrivilege('recipients.import'), 403);
+
         $this->validate();
 
         $nameIdx = $this->nameColumn === '' ? null : (int) $this->nameColumn;

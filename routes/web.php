@@ -62,14 +62,20 @@ Route::middleware(['auth', 'privilege:recipients.import', 'throttle:mutations'])
 });
 
 Route::get('/campaigns', [CampaignController::class, 'index'])->middleware('auth')->name('campaigns.index');
-Route::get('/campaigns/create', CampaignBuilder::class)->middleware(['auth', 'privilege:campaigns.send'])->name('campaigns.create');
-Route::get('/campaigns/test-send', TestEmailSender::class)->middleware(['auth', 'privilege:test-email.send'])->name('campaigns.test-send');
-Route::post('/campaigns/test-send/prefill', [CampaignController::class, 'prefillTestSend'])
-    ->middleware(['auth', 'privilege:test-email.send', 'throttle:mutations'])->name('campaigns.test-send.prefill');
 Route::get('/campaigns/sent-mail', [CampaignController::class, 'sentMail'])->middleware('auth')->name('campaigns.sent-mail');
 Route::get('/campaigns/{campaign}', [CampaignController::class, 'show'])->middleware('auth')->name('campaigns.show');
-Route::post('/campaigns/{campaign}/recipients/{recipient}/retry', [CampaignController::class, 'retryRecipient'])
-    ->middleware(['auth', 'privilege:campaigns.send', 'throttle:mutations'])->name('campaigns.retry-recipient');
+
+Route::middleware(['auth', 'privilege:campaigns.send'])->group(function () {
+    Route::get('/campaigns/create', CampaignBuilder::class)->name('campaigns.create');
+    Route::post('/campaigns/{campaign}/recipients/{recipient}/retry', [CampaignController::class, 'retryRecipient'])
+        ->middleware('throttle:mutations')->name('campaigns.retry-recipient');
+});
+
+Route::middleware(['auth', 'privilege:test-email.send'])->group(function () {
+    Route::get('/campaigns/test-send', TestEmailSender::class)->name('campaigns.test-send');
+    Route::post('/campaigns/test-send/prefill', [CampaignController::class, 'prefillTestSend'])
+        ->middleware('throttle:mutations')->name('campaigns.test-send.prefill');
+});
 
 // ── Admin: activity log — SuperAdmin + anyone granted activity-logs.view ────────────────
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'privilege:activity-logs.view', 'throttle:mutations'])->group(function () {
