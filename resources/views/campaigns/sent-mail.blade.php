@@ -52,15 +52,17 @@
         @if($sort !== 'activity')<input type="hidden" name="sort" value="{{ $sort }}">@endif
         @if($direction !== 'desc')<input type="hidden" name="direction" value="{{ $direction }}">@endif
         <input type="text" name="q" value="{{ request('q') }}" placeholder="Search name or email…"
+               x-data x-on:input.debounce.500ms="$el.form.requestSubmit()"
                class="flex-1 min-w-[180px] text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg px-3 py-2">
-        <select name="status" class="text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg px-3 py-2">
+        <select name="status" x-data x-on:change="$el.form.requestSubmit()"
+                class="text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg px-3 py-2">
             <option value="">All statuses</option>
             <option value="pending" @selected($statusFilter === 'pending')>Waiting</option>
             <option value="queued" @selected($statusFilter === 'queued')>Queued</option>
             <option value="sent" @selected($statusFilter === 'sent')>Sent</option>
             <option value="failed" @selected($statusFilter === 'failed')>Failed</option>
         </select>
-        <button type="submit" class="text-sm font-medium px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white">Filter</button>
+        <noscript><button type="submit" class="text-sm font-medium px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white">Filter</button></noscript>
         @if(request('q') || $statusFilter)
         <a href="{{ route('campaigns.sent-mail') }}" class="text-sm text-slate-500 hover:underline">Clear</a>
         @endif
@@ -172,4 +174,16 @@
             </table>
         </div>
     </div>
+
+    @if($sent->contains(fn ($r) => in_array($r->status, ['pending', 'queued'], true)))
+    <script>
+        // See campaigns/show.blade.php for why — a resend/retry has no realtime layer to tell
+        // this page it finished, so without this it sits on "Waiting" until manually reloaded.
+        setInterval(() => {
+            const active = document.activeElement?.tagName;
+            if (active === 'INPUT' || active === 'SELECT' || active === 'TEXTAREA') return;
+            window.location.reload();
+        }, 6000);
+    </script>
+    @endif
 </x-layout>
