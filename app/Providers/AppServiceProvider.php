@@ -23,6 +23,14 @@ class AppServiceProvider extends ServiceProvider
     {
         Password::defaults(fn () => Password::min(8)->mixedCase()->numbers()->symbols());
 
+        // Livewire's temporary-file-upload endpoint is registered globally at boot,
+        // independent of any page route's middleware — without this it defaults to
+        // 'throttle:60,1' with no auth at all, letting anyone POST files to
+        // storage/app/private/livewire-tmp/ regardless of whether they can reach any page
+        // that actually uses WithFileUploads (recipient/officer directory imports, campaign
+        // zip attachments).
+        config(['livewire.temporary_file_upload.middleware' => ['auth', 'throttle:60,1']]);
+
         $this->configureRateLimiters();
         $this->configureActivityLogging();
     }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\LogMutation;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: ['127.0.0.1']);
 
         $middleware->append(LogMutation::class);
+        $middleware->append(SecurityHeaders::class);
 
         $middleware->alias([
             'is_admin' => \App\Http\Middleware\IsAdmin::class,

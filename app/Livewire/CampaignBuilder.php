@@ -220,6 +220,10 @@ class CampaignBuilder extends Component
         }
         $this->queued = true;
 
+        // Livewire's update endpoint isn't covered by the page route's own
+        // 'privilege:campaigns.send' middleware, so re-check independently here too.
+        abort_unless(auth()->user()->hasPrivilege('campaigns.send'), 403);
+
         $account = MailAccount::findOrFail($this->mailAccountId);
         abort_unless(auth()->user()->canUseMailAccount($account), 403);
 

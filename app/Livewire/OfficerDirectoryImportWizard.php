@@ -35,8 +35,15 @@ class OfficerDirectoryImportWizard extends Component
     /** @var array<int, array{id:int, current_officer:?string, current_email:?string, current_cug:?string, matched:bool}> */
     public array $preview = [];
 
+    /**
+     * Livewire's update endpoint (unlike the initial page GET) isn't covered by the route's
+     * own 'is_admin' middleware, so every action method re-checks independently — matches
+     * CampaignBuilder/TestEmailSender's pattern elsewhere in this app.
+     */
     public function upload(): void
     {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
         $this->validate(['file' => 'required|file|mimes:xlsx,csv|max:5120']);
 
         $parsed = app(RecipientImportParser::class)->parse($this->file->getRealPath(), $this->file->getClientOriginalExtension());
@@ -81,6 +88,8 @@ class OfficerDirectoryImportWizard extends Component
 
     public function apply(): void
     {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
         $nameCol = $this->nameColumn();
         $emailCol = $this->emailColumn();
         $cugCol = $this->cugColumn();
