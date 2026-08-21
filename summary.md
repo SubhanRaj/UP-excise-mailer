@@ -1261,6 +1261,24 @@ just this one resend. Checkbox hidden for `manual` recipients (no backing
 directory row). Wrapped in the same `DB::transaction()`+`try`/`catch`
 convention as `retryRecipient()`.
 
+### recipients.manage privilege, auto-submit filters, auto-refresh (2026-08-21, done)
+
+User (an `Admin`-role account, not `SuperAdmin`) reported no edit option
+on `/recipients` at all. Root cause: the zone/division/district Edit
+links and the Officer Directory import wizard were gated on `isAdmin()`
+(`role === 'SuperAdmin'` only) — the one spot in this app not using the
+granular `privilege:X` convention everything else uses (campaigns.send,
+templates.manage, etc.). Added `recipients.manage` to `User::PRIVILEGES`,
+switched the `recipients` route group + Blade guards +
+`OfficerDirectoryImportWizard`'s in-component checks to it, granted it to
+the existing Admin-role account. Also: search boxes and status-filter
+dropdowns on the campaign detail and Sent Mail pages now auto-submit
+(Alpine debounce) instead of needing a Filter click, and both pages
+auto-refresh every 6s while a recipient is still pending/queued — user
+reported a resend showing "Waiting" until manual reload even though Zoho
+had already accepted it; queue workers were fine (no failed jobs), it was
+purely that a static Blade page has nothing telling it the job finished.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
