@@ -55,11 +55,11 @@ Route::resource('templates', MailTemplateController::class)->only(['create', 'st
     ->middleware(['auth', 'privilege:templates.manage', 'throttle:mutations']);
 
 Route::get('/recipient-lists', [RecipientListController::class, 'index'])->middleware('auth')->name('recipient-lists.index');
-Route::get('/recipient-lists/{recipientList}', [RecipientListController::class, 'show'])->middleware('auth')->name('recipient-lists.show');
 Route::middleware(['auth', 'privilege:recipients.import', 'throttle:mutations'])->group(function () {
     Route::get('/recipient-lists/create', [RecipientListController::class, 'create'])->name('recipient-lists.create');
     Route::delete('/recipient-lists/{recipientList}', [RecipientListController::class, 'destroy'])->name('recipient-lists.destroy');
 });
+Route::get('/recipient-lists/{recipientList}', [RecipientListController::class, 'show'])->middleware('auth')->name('recipient-lists.show');
 
 Route::get('/campaigns', [CampaignController::class, 'index'])->middleware('auth')->name('campaigns.index');
 Route::get('/campaigns/sent-mail', [CampaignController::class, 'sentMail'])->middleware('auth')->name('campaigns.sent-mail');
