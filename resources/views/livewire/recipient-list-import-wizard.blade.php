@@ -1,6 +1,7 @@
 <div>
     <div class="max-w-3xl bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
 
+        @if($mode === 'file')
         <div class="flex items-center gap-2 mb-6 text-xs font-medium text-slate-400 dark:text-slate-500">
             <span class="{{ $step >= 1 ? 'text-indigo-600 dark:text-indigo-400' : '' }}">1. Upload</span>
             <i class="ti ti-chevron-right"></i>
@@ -8,8 +9,21 @@
             <i class="ti ti-chevron-right"></i>
             <span class="{{ $step >= 3 ? 'text-indigo-600 dark:text-indigo-400' : '' }}">3. Preview &amp; Save</span>
         </div>
+        @endif
 
         @if($step === 1)
+        <div class="flex items-center gap-2 mb-5 border border-slate-200 dark:border-slate-700 rounded-lg p-1 w-fit">
+            <button type="button" wire:click="$set('mode', 'file')"
+                class="text-sm font-medium px-3 py-1.5 rounded-md transition-colors {{ $mode === 'file' ? 'bg-indigo-600 text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200' }}">
+                <i class="ti ti-file-upload text-base align-text-bottom"></i> Upload File
+            </button>
+            <button type="button" wire:click="$set('mode', 'manual')"
+                class="text-sm font-medium px-3 py-1.5 rounded-md transition-colors {{ $mode === 'manual' ? 'bg-indigo-600 text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200' }}">
+                <i class="ti ti-edit text-base align-text-bottom"></i> Type Manually
+            </button>
+        </div>
+
+        @if($mode === 'file')
         <form wire:submit="upload" class="space-y-5">
             <div>
                 <label class="field-label">List Name</label>
@@ -33,6 +47,31 @@
                 <a href="{{ route('recipient-lists.index') }}" wire:navigate class="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Cancel</a>
             </div>
         </form>
+        @else
+        <form wire:submit="saveManual" class="space-y-5">
+            <div>
+                <label class="field-label">List Name</label>
+                <input type="text" wire:model="listName" required class="field-input @error('listName') field-error @enderror">
+                @error('listName')<p class="field-err-msg">{{ $message }}</p>@enderror
+            </div>
+
+            <div>
+                <label class="field-label">Recipients</label>
+                <textarea wire:model="manualEntries" rows="8" placeholder="Ramesh Kumar, ramesh@example.com&#10;suresh@example.com&#10;Priya Singh, priya@example.com"
+                    class="field-input font-mono text-xs @error('manualEntries') field-error @enderror"></textarea>
+                <p class="field-hint">One recipient per line — "Name, email" or just an email. No file needed.</p>
+                @error('manualEntries')<p class="field-err-msg">{{ $message }}</p>@enderror
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+                <button type="submit" wire:loading.attr="disabled" wire:target="saveManual"
+                    class="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors">
+                    Save List
+                </button>
+                <a href="{{ route('recipient-lists.index') }}" wire:navigate class="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Cancel</a>
+            </div>
+        </form>
+        @endif
         @endif
 
         @if($step === 2)

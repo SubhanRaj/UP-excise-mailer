@@ -16,6 +16,9 @@ class RecipientListImportWizard extends Component
 
     public int $step = 1;
 
+    /** 'file' (upload + column mapping) or 'manual' (typed name/email pairs, no file needed). */
+    public string $mode = 'file';
+
     #[Validate('required|string|max:150')]
     public string $listName = '';
 
@@ -29,6 +32,9 @@ class RecipientListImportWizard extends Component
     public string $nameColumn = '';
 
     public string $emailColumn = '';
+
+    /** One recipient per line — "Name, email@example.com" or a bare email. */
+    public string $manualEntries = '';
 
     /**
      * Livewire's update endpoint (unlike the initial page GET) isn't covered by the route's
@@ -113,6 +119,51 @@ class RecipientListImportWizard extends Component
         });
 
         flash()->success("Recipient list \"{$this->listName}\" imported — {$items->count()} recipient(s).");
+
+        $this->redirectRoute('recipient-lists.index', navigate: true);
+    }
+
+    public function saveManual(): void
+    {
+        abort_unless(auth()->user()->hasPrivilege('recipients.import'), 403);
+
+        $this->validate([
+            'listName' => 'required|string|max:150',
+            'manualEntries' => 'required|string',
+        ]);
+
+        $items = collect(preg_split('/\r?\n/', $this->manualEntries))
+            ->map(fn (string $line) => trim($line))
+            ->filter()
+            ->map(function (string $line) {
+                // "Name, email" if a comma splits it, otherwise the whole line is the email.
+                [$name, $email] = str_contains($line, ',')
+                    ? array_pad(explode(',', $line, 2), 2, '')
+                    : [null, $line];
+
+                return ['name' => $name !== null ? trim($name) ?: null : null, 'email' => trim($email)];
+            })
+            ->filter(fn (array $r) => filter_var($r['email'], FILTER_VALIDATE_EMAIL))
+            ->unique('email')
+            ->values();
+
+        if ($items->isEmpty()) {
+            $this->addError('manualEntries', 'No valid email addresses found — one per line, optionally "Name, email".');
+
+            return;
+        }
+
+        DB::transaction(function () use ($items) {
+            $list = RecipientList::create([
+                'name' => $this->listName,
+                'source_type' => 'manual',
+                'uploaded_by' => auth()->id(),
+            ]);
+
+            $list->items()->createMany($items->all());
+        });
+
+        flash()->success("Recipient list \"{$this->listName}\" created — {$items->count()} recipient(s).");
 
         $this->redirectRoute('recipient-lists.index', navigate: true);
     }
