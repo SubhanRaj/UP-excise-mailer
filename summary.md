@@ -1211,6 +1211,23 @@ writes without tying them together (`SendCampaignRecipientMail::handle()`,
 CRUD controllers correctly don't need it, matching the sibling apps' own
 convention.
 
+### Manual recipient entry on Recipient Lists (2026-08-21, done)
+
+User asked for a way to add recipients directly (form/table input) instead
+of always needing an Excel upload — same idea as the manual comma/newline
+email textarea already in `CampaignBuilder`/`TestEmailSender`. Considered
+putting this on `/recipients` (the Zone/Division/District directory) but
+that page is deliberately the fixed 5/18/75 org hierarchy (CLAUDE.md), not
+an addable list — confirmed with the user and built it into
+`/recipient-lists/create` instead, alongside the existing file-upload
+wizard. `RecipientListImportWizard` gained a `mode` toggle ("Upload File" /
+"Type Manually") and a `saveManual()` action: a textarea, one recipient per
+line as "Name, email" or a bare email, parsed the same trim/filter/dedupe
+way as `CampaignBuilder::parsedManualEmails()`, saved via the same
+privilege-check + `DB::transaction()` convention as the rest of this
+session's write-path audit. `recipient_lists.source_type`'s migration
+comment already anticipated a `'manual'` value — no schema change needed.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
