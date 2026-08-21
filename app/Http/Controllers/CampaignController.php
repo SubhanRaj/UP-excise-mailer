@@ -10,6 +10,7 @@ use App\Models\MailAccount;
 use App\Models\MailTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class CampaignController extends Controller
@@ -53,13 +54,32 @@ class CampaignController extends Controller
         return view('campaigns.show', compact('campaign', 'recipients', 'statusCounts', 'sort', 'direction'));
     }
 
-    /** Global "what's actually gone out" view — per-campaign status only shows one campaign at a time. */
-    public function sentMail(): View
+    /**
+     * Global "everything this app has ever tried to send" view, across every campaign —
+     * per-campaign status (CampaignController::show()) only shows one campaign at a time.
+     * Shows every status, not just 'sent', so a failed send doesn't just silently vanish from
+     * the list — it shows up with its own badge instead.
+     */
+    public function sentMail(Request $request): View
     {
+        $statusCounts = CampaignRecipient::selectRaw('status, count(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        $sortable = ['name', 'email', 'status', 'activity'];
+        $sort = in_array($request->query('sort'), $sortable, true) ? $request->query('sort') : 'activity';
+        $direction = $request->query('direction') === 'asc' ? 'asc' : 'desc';
+        $orderColumn = $sort === 'activity' ? DB::raw('COALESCE(sent_at, failed_at, created_at)') : $sort;
+
         $sent = CampaignRecipient::with('campaign')
-            ->where('status', 'sent')
-            ->latest('sent_at')
-            ->paginate(50);
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->query('status')))
+            ->when($request->filled('q'), function ($q) use ($request) {
+                $term = '%'.$request->query('q').'%';
+                $q->where(fn ($q2) => $q2->where('name', 'like', $term)->orWhere('email', 'like', $term));
+            })
+            ->orderBy($orderColumn, $direction)
+            ->paginate(50)
+            ->withQueryString();
 
         $testSends = ActivityLog::where('action', 'test-email.send')
             ->with('user')
@@ -67,7 +87,10 @@ class CampaignController extends Controller
             ->limit(50)
             ->get();
 
-        return view('campaigns.sent-mail', ['sent' => $sent, 'testSends' => $testSends]);
+        return view('campaigns.sent-mail', [
+            'sent' => $sent, 'testSends' => $testSends, 'statusCounts' => $statusCounts,
+            'sort' => $sort, 'direction' => $direction,
+        ]);
     }
 
     /**
