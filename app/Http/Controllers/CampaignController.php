@@ -27,17 +27,30 @@ class CampaignController extends Controller
         return view('campaigns.index', compact('campaigns'));
     }
 
-    public function show(Campaign $campaign): View
+    public function show(Campaign $campaign, Request $request): View
     {
         $campaign->load('mailAccount', 'template', 'createdBy');
-        $recipients = $campaign->recipients()->latest()->paginate(50);
 
         $statusCounts = $campaign->recipients()
             ->selectRaw('status, count(*) as count')
             ->groupBy('status')
             ->pluck('count', 'status');
 
-        return view('campaigns.show', compact('campaign', 'recipients', 'statusCounts'));
+        $sortable = ['name', 'email', 'status', 'sent_at'];
+        $sort = in_array($request->get('sort'), $sortable, true) ? $request->get('sort') : 'id';
+        $direction = $request->get('direction') === 'asc' ? 'asc' : 'desc';
+
+        $recipients = $campaign->recipients()
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->get('status')))
+            ->when($request->filled('q'), function ($q) use ($request) {
+                $term = '%'.$request->get('q').'%';
+                $q->where(fn ($q2) => $q2->where('name', 'like', $term)->orWhere('email', 'like', $term));
+            })
+            ->orderBy($sort, $direction)
+            ->paginate(50)
+            ->withQueryString();
+
+        return view('campaigns.show', compact('campaign', 'recipients', 'statusCounts', 'sort', 'direction'));
     }
 
     /** Global "what's actually gone out" view — per-campaign status only shows one campaign at a time. */
