@@ -1298,6 +1298,27 @@ actually emailed manually from their own Zoho/Gmail inbox instead of
 through this app — clears the failed state and stamps `sent_at` without
 dispatching another automated send.
 
+### Resend with the corrected attachment — Shravasti/Bhadohi (2026-08-21, done + live-fixed)
+
+User reported Shravasti and Bhadohi never got the attached file, while
+everyone else did. Root cause: `ZipRecipientMatcher`'s fuzzy match
+missed "DEO - Shravasti" against `5_Shops_SHRAWASTI.xlsx` (spelling) and
+"DEO - Bhadohi" against `5_Shops_SANT_RAVIDAS_NAGAR_BHADOHI.xlsx`
+(official district name) at original queue time — both sent with
+`attachment_path=null`, `matched_via='none'`, no error, `status='sent'`
+(a silent miss, not a failure). Neither existing resend action gave any
+way to fix it, so retrying just repeated the same no-attachment send.
+The extracted zip directory is never cleaned up after a campaign
+completes, so the actual files were still on disk. Added a "No
+attachment" badge on any `zip_per_recipient` row missing one, and
+extended the resend form with an attachment `<select>` listing every
+file the campaign's zip actually extracted —
+`CampaignController::resendToEmail()` validates the choice server-side
+against the campaign's own extracted files only. Verified live against
+the real campaign (not just tested): both recipients now show the
+correct `attachment_path` and `status=sent`; confirmed 0 of 76
+recipients in that campaign are left without an attachment.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
