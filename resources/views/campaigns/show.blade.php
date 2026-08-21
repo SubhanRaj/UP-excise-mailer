@@ -96,7 +96,15 @@
                             <p class="text-xs text-red-500 dark:text-red-400 mt-1">{{ $recipient->error_message }}</p>
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-slate-400 dark:text-slate-500">{{ $recipient->sent_at?->format('d M Y, H:i') ?? '—' }}</td>
+                        <td class="px-4 py-3 text-slate-400 dark:text-slate-500">
+                            @if($recipient->sent_at)
+                                {{ $recipient->sent_at->format('d M Y, H:i') }}
+                            @elseif($recipient->failed_at)
+                                <span class="text-red-400 dark:text-red-500">Failed {{ $recipient->failed_at->format('d M Y, H:i') }}</span>
+                            @else
+                                —
+                            @endif
+                        </td>
                         <td class="px-4 py-3 text-right">
                             @if($recipient->status === 'failed' && auth()->user()->hasPrivilege('campaigns.send'))
                             <form method="POST" action="{{ route('campaigns.retry-recipient', [$campaign, $recipient]) }}"

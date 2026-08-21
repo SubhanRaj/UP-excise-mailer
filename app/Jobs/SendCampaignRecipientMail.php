@@ -49,7 +49,7 @@ class SendCampaignRecipientMail implements ShouldQueue
                 'error' => $e->getMessage(),
             ]);
 
-            $recipient->update(['status' => 'failed', 'error_message' => substr($e->getMessage(), 0, 500)]);
+            $recipient->update(['status' => 'failed', 'error_message' => substr($e->getMessage(), 0, 500), 'failed_at' => now()]);
         }
 
         $this->markCampaignCompletedIfDone($recipient->campaign_id);
