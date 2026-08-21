@@ -32,6 +32,7 @@ class User extends Authenticatable
         'designations.manage',
         'templates.manage',
         'campaigns.send',
+        'recipients.manage',
         'recipients.import',
         'activity-logs.view',
         'test-email.send',

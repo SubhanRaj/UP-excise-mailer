@@ -7,6 +7,7 @@
         'designations.manage' => 'Manage Designations',
         'templates.manage' => 'Manage Templates',
         'campaigns.send' => 'Send Campaigns',
+        'recipients.manage' => 'Edit Zone/Division/District Contacts',
         'recipients.import' => 'Import Recipients',
         'activity-logs.view' => 'View Activity Logs',
         'test-email.send' => 'Send Test Email',

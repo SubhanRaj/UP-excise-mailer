@@ -37,12 +37,12 @@ class OfficerDirectoryImportWizard extends Component
 
     /**
      * Livewire's update endpoint (unlike the initial page GET) isn't covered by the route's
-     * own 'is_admin' middleware, so every action method re-checks independently — matches
-     * CampaignBuilder/TestEmailSender's pattern elsewhere in this app.
+     * own 'privilege:recipients.manage' middleware, so every action method re-checks
+     * independently — matches CampaignBuilder/TestEmailSender's pattern elsewhere in this app.
      */
     public function upload(): void
     {
-        abort_unless(auth()->user()?->isAdmin(), 403);
+        abort_unless(auth()->user()?->hasPrivilege('recipients.manage'), 403);
 
         $this->validate(['file' => 'required|file|mimes:xlsx,csv|max:5120']);
 
@@ -88,7 +88,7 @@ class OfficerDirectoryImportWizard extends Component
 
     public function apply(): void
     {
-        abort_unless(auth()->user()?->isAdmin(), 403);
+        abort_unless(auth()->user()?->hasPrivilege('recipients.manage'), 403);
 
         $nameCol = $this->nameColumn();
         $emailCol = $this->emailColumn();

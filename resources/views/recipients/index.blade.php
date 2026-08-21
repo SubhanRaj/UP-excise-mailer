@@ -10,7 +10,7 @@
             </a>
             @endforeach
         </div>
-        @if(auth()->user()->isAdmin())
+        @if(auth()->user()->hasPrivilege('recipients.manage'))
         <a href="{{ route('recipients.import') }}" wire:navigate
            class="mb-2 inline-flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
             <i class="ti ti-file-spreadsheet text-base"></i>
@@ -29,7 +29,7 @@
                         <th class="text-left px-4 py-3">JEC Name</th>
                         <th class="text-left px-4 py-3">JEC Email</th>
                         <th class="text-left px-4 py-3">JEC CUG</th>
-                        @if(auth()->user()->isAdmin())<th class="text-right px-4 py-3">Actions</th>@endif
+                        @if(auth()->user()->hasPrivilege('recipients.manage'))<th class="text-right px-4 py-3">Actions</th>@endif
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
@@ -39,7 +39,7 @@
                         <td class="px-4 py-3 text-slate-600 dark:text-slate-300 {{ $zone->jc_name ? '' : 'italic text-slate-400 dark:text-slate-500' }}">{{ $zone->officerDisplayName() }}</td>
                         <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ $zone->jc_email ?? '—' }}</td>
                         <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $zone->jc_cug ?? '—' }}</td>
-                        @if(auth()->user()->isAdmin())
+                        @if(auth()->user()->hasPrivilege('recipients.manage'))
                         <td class="px-4 py-3 text-right">
                             <a href="{{ route('recipients.zones.edit', $zone) }}" wire:navigate class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="Edit">
                                 <i class="ti ti-pencil text-base"></i>
@@ -61,7 +61,7 @@
                         <th class="text-left px-4 py-3">DEC Name</th>
                         <th class="text-left px-4 py-3">DEC Email</th>
                         <th class="text-left px-4 py-3">DEC CUG</th>
-                        @if(auth()->user()->isAdmin())<th class="text-right px-4 py-3">Actions</th>@endif
+                        @if(auth()->user()->hasPrivilege('recipients.manage'))<th class="text-right px-4 py-3">Actions</th>@endif
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
@@ -72,7 +72,7 @@
                         <td class="px-4 py-3 text-slate-600 dark:text-slate-300 {{ $division->dc_name ? '' : 'italic text-slate-400 dark:text-slate-500' }}">{{ $division->officerDisplayName() }}</td>
                         <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ $division->dc_email ?? '—' }}</td>
                         <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $division->dc_cug ?? '—' }}</td>
-                        @if(auth()->user()->isAdmin())
+                        @if(auth()->user()->hasPrivilege('recipients.manage'))
                         <td class="px-4 py-3 text-right">
                             <a href="{{ route('recipients.divisions.edit', $division) }}" wire:navigate class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="Edit">
                                 <i class="ti ti-pencil text-base"></i>
@@ -95,7 +95,7 @@
                         <th class="text-left px-4 py-3">DEO Name</th>
                         <th class="text-left px-4 py-3">DEO Email</th>
                         <th class="text-left px-4 py-3">DEO CUG</th>
-                        @if(auth()->user()->isAdmin())<th class="text-right px-4 py-3">Actions</th>@endif
+                        @if(auth()->user()->hasPrivilege('recipients.manage'))<th class="text-right px-4 py-3">Actions</th>@endif
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
@@ -113,7 +113,7 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $district->deo_cug ?? '—' }}</td>
-                        @if(auth()->user()->isAdmin())
+                        @if(auth()->user()->hasPrivilege('recipients.manage'))
                         <td class="px-4 py-3 text-right">
                             <a href="{{ route('recipients.districts.edit', $district) }}" wire:navigate class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="Edit">
                                 <i class="ti ti-pencil text-base"></i>

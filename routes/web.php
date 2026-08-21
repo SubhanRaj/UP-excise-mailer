@@ -39,7 +39,7 @@ Route::get('/dashboard', Dashboard::class)->middleware('auth')->name('dashboard'
 
 Route::get('/recipients', [RecipientController::class, 'index'])->middleware('auth')->name('recipients.index');
 
-Route::prefix('recipients')->name('recipients.')->middleware(['auth', 'is_admin', 'throttle:mutations'])->group(function () {
+Route::prefix('recipients')->name('recipients.')->middleware(['auth', 'privilege:recipients.manage', 'throttle:mutations'])->group(function () {
     Route::get('/zones/{zone}/edit', [RecipientController::class, 'editZone'])->name('zones.edit');
     Route::put('/zones/{zone}', [RecipientController::class, 'updateZone'])->name('zones.update');
     Route::get('/divisions/{division}/edit', [RecipientController::class, 'editDivision'])->name('divisions.edit');

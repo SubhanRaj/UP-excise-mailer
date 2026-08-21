@@ -43,15 +43,17 @@
         @if($sort !== 'id')<input type="hidden" name="sort" value="{{ $sort }}">@endif
         @if($direction !== 'desc')<input type="hidden" name="direction" value="{{ $direction }}">@endif
         <input type="text" name="q" value="{{ request('q') }}" placeholder="Search name or email…"
+               x-data x-on:input.debounce.500ms="$el.form.requestSubmit()"
                class="flex-1 min-w-[180px] text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg px-3 py-2">
-        <select name="status" class="text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg px-3 py-2">
+        <select name="status" x-data x-on:change="$el.form.requestSubmit()"
+                class="text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg px-3 py-2">
             <option value="">All statuses</option>
             <option value="pending" @selected($statusFilter === 'pending')>Waiting</option>
             <option value="queued" @selected($statusFilter === 'queued')>Queued</option>
             <option value="sent" @selected($statusFilter === 'sent')>Sent</option>
             <option value="failed" @selected($statusFilter === 'failed')>Failed</option>
         </select>
-        <button type="submit" class="text-sm font-medium px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white">Filter</button>
+        <noscript><button type="submit" class="text-sm font-medium px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white">Filter</button></noscript>
         @if(request('q') || $statusFilter)
         <a href="{{ route('campaigns.show', $campaign) }}" class="text-sm text-slate-500 hover:underline">Clear</a>
         @endif
@@ -152,4 +154,19 @@
     </div>
 
     <div class="mt-4">{{ $recipients->links() }}</div>
+
+    @if($recipients->contains(fn ($r) => in_array($r->status, ['pending', 'queued'], true)))
+    <script>
+        // Auto-refresh while a send is still in flight — the page has no realtime layer, so
+        // without this a resend/retry sits showing "Waiting" until someone manually reloads,
+        // even after the job has actually finished. Skips a tick if the user is mid-typing
+        // (search box) or has a resend form's email field open, so it can't yank focus/wipe
+        // an in-progress edit out from under them.
+        setInterval(() => {
+            const active = document.activeElement?.tagName;
+            if (active === 'INPUT' || active === 'SELECT' || active === 'TEXTAREA') return;
+            window.location.reload();
+        }, 6000);
+    </script>
+    @endif
 </x-layout>
