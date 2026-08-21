@@ -1345,6 +1345,43 @@ privilege check), and the affected user already had that privilege — the
 404 was the actual root cause, not a missing privilege. Fixed by moving the
 `create`/`destroy` group before the `{recipientList}` show route.
 
+### Quill editor not mounting on first wire:navigate visit to templates/create (2026-08-21, fixed)
+
+Reported as "the campaign creator body bug is still there... only on page
+reload" despite earlier attempts. Root cause, found by reading Livewire's own
+`navigate.js` (`prepNewBodyScriptTagsToRun`): every `<script>` tag in a page
+swapped in via `wire:navigate` gets cloned and re-inserted via
+`element.replaceWith()` so it actually executes (no dedup unless
+`data-navigate-once` is set) — but a `<script src>` tag inserted this way
+loads **asynchronously**, unlike the same tag parsed synchronously by the
+browser on a real/hard page load. `templates/_editor.blade.php` loaded
+`quill.js` and then immediately ran `new Quill(...)` in the very next
+`<script>` tag, which raced the async load and silently threw
+`Quill is not defined` on a from-SPA-navigation visit — while a hard reload
+(synchronous parser-driven script execution) always happened to win the
+race, which is why every previous "fix" attempt (that never touched this
+file) appeared to work once reloaded and regressed again from a fresh
+`wire:navigate` visit. Fixed by loading `quill.js` on demand with an
+`onload` callback instead of assuming it's already loaded.
+
+### Recipient Lists / Recipients nav cleanup + resend directory checkbox (2026-08-21, done)
+
+Investigated "recipient list not updated" report (e.g. Bahraich) by tracing
+`resendToEmail()`/`CampaignRecipient::saveEmailToDirectory()` end to end and
+testing it directly in a rolled-back transaction — the write path itself was
+already correct (confirmed working for 4 of that day's 10 resends; Bahraich
+specifically had never actually been resent, only originally sent). The
+likely real issue: the "Also save as the on-file email" checkbox is easy to
+miss/leave unchecked, so a typed correction only fixes that one send instead
+of the directory. Now defaults to checked (opt-out, not opt-in). Separately,
+`/recipient-lists`'s single "Import List" button hid manual entry inside a
+tab toggle on the next page — split into two explicit buttons ("Import
+File" / "Add Recipients Manually", the latter deep-linking to the wizard's
+manual tab via `RecipientListImportWizard::mount(string $mode)`), and added
+cross-linking Zones/Divisions/Districts/Ad-hoc-Lists tabs to both this page
+and `/recipients` so the fixed directory and ad-hoc lists no longer feel
+like two unrelated sections.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
