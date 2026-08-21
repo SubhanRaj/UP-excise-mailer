@@ -1,6 +1,22 @@
 <x-layout title="{{ $campaign->name }}" page-title="{{ $campaign->name }}" page-subtitle="UP Department of Excise — Mailer">
     <x-breadcrumb :items="[['name' => 'Campaigns', 'url' => route('campaigns.index')], ['name' => $campaign->name]]" />
 
+    @if($campaign->mailAccount?->repliesEnabled() && auth()->user()->hasPrivilege('campaigns.send'))
+    <div class="flex items-center justify-end gap-3 mb-4 text-sm">
+        <span class="text-slate-400 dark:text-slate-500">
+            Replies last checked:
+            {{ $campaign->mailAccount->imap_last_fetched_at?->ist()->format('d M Y, H:i') ?? 'never' }}
+        </span>
+        <form method="POST" action="{{ route('campaigns.fetch-replies', $campaign) }}">
+            @csrf
+            <button type="submit" class="inline-flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium px-3 py-1.5 rounded-lg transition-colors">
+                <i class="ti ti-mail-forward text-base"></i>
+                Check for replies
+            </button>
+        </form>
+    </div>
+    @endif
+
     @php
         $statusFilter = request('status');
         $baseQuery = fn (array $overrides = []) => request()->fullUrlWithQuery(array_merge(['page' => null], $overrides));
@@ -79,8 +95,8 @@
                         <th class="text-right px-4 py-3">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
-                    @forelse($recipients as $recipient)
+                @forelse($recipients as $recipient)
+                <tbody x-data="{ showReplies: false }" class="divide-y divide-slate-100 dark:divide-slate-700">
                     @php
                         $statusColor = match($recipient->status) {
                             'sent' => 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400',
@@ -91,7 +107,15 @@
                     @endphp
                     <tr>
                         <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ $recipient->name ?: '—' }}</td>
-                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $recipient->email }}</td>
+                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">
+                            {{ $recipient->email }}
+                            @if($recipient->replies_count > 0)
+                            <button type="button" x-on:click="showReplies = ! showReplies"
+                                    class="ml-1 badge bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400">
+                                <i class="ti ti-message-reply text-sm"></i> {{ $recipient->replies_count }}
+                            </button>
+                            @endif
+                        </td>
                         <td class="px-4 py-3">
                             <span class="badge {{ $statusColor }} capitalize">{{ $recipient->status === 'pending' ? 'Waiting' : $recipient->status }}</span>
                             @if($campaign->attachment_mode === 'zip_per_recipient' && ! $recipient->attachment_path)
@@ -165,10 +189,32 @@
                             @endif
                         </td>
                     </tr>
-                    @empty
-                    <tr><td colspan="5" class="px-4 py-8 text-center text-slate-400 dark:text-slate-500">No recipients.</td></tr>
-                    @endforelse
+                    @if($recipient->replies_count > 0)
+                    <tr x-show="showReplies" x-cloak>
+                        <td colspan="5" class="px-4 py-3 bg-slate-50 dark:bg-slate-900/50">
+                            <div class="space-y-3">
+                                @foreach($recipient->replies as $reply)
+                                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3">
+                                    <div class="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 mb-1">
+                                        <span class="font-medium text-slate-600 dark:text-slate-300">{{ $reply->from_name ?: $reply->from_address }}</span>
+                                        <span>{{ $reply->received_at->ist()->format('d M Y, H:i') }}</span>
+                                    </div>
+                                    @if($reply->subject)
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-1">{{ $reply->subject }}</p>
+                                    @endif
+                                    <p class="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-line">{{ \Illuminate\Support\Str::limit($reply->body_text, 2000) }}</p>
+                                </div>
+                                @endforeach
+                            </div>
+                        </td>
+                    </tr>
+                    @endif
                 </tbody>
+                @empty
+                <tbody>
+                    <tr><td colspan="5" class="px-4 py-8 text-center text-slate-400 dark:text-slate-500">No recipients.</td></tr>
+                </tbody>
+                @endforelse
             </table>
         </div>
     </div>

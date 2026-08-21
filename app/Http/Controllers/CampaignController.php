@@ -8,6 +8,7 @@ use App\Models\Campaign;
 use App\Models\CampaignRecipient;
 use App\Models\MailAccount;
 use App\Models\MailTemplate;
+use App\Services\ImapReplyFetcher;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -44,6 +45,8 @@ class CampaignController extends Controller
         $direction = $request->query('direction') === 'asc' ? 'asc' : 'desc';
 
         $recipients = $campaign->recipients()
+            ->withCount('replies')
+            ->with(['replies' => fn ($q) => $q->orderBy('received_at')])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->query('status')))
             ->when($request->filled('q'), function ($q) use ($request) {
                 $term = '%'.$request->query('q').'%';
@@ -258,6 +261,31 @@ class CampaignController extends Controller
             default => '.',
         };
         flash()->success("Resending to {$newEmail}{$note}");
+
+        return back();
+    }
+
+    public function fetchReplies(Campaign $campaign): RedirectResponse
+    {
+        $campaign->loadMissing('mailAccount');
+        $account = $campaign->mailAccount;
+
+        if (! $account || ! $account->repliesEnabled()) {
+            flash()->error('This campaign\'s mail account has no IMAP settings configured — set them under Mail Accounts first.');
+
+            return back();
+        }
+
+        try {
+            $count = (new ImapReplyFetcher())->fetch($account);
+        } catch (\Throwable $e) {
+            Log::error('CampaignController@fetchReplies failed', ['mail_account_id' => $account->id, 'error' => $e->getMessage()]);
+            flash()->error("Couldn't check for replies: {$e->getMessage()}");
+
+            return back();
+        }
+
+        flash()->success($count > 0 ? "Found {$count} new ".str('reply')->plural($count).'.' : 'No new replies.');
 
         return back();
     }
