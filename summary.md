@@ -1228,6 +1228,39 @@ privilege-check + `DB::transaction()` convention as the rest of this
 session's write-path audit. `recipient_lists.source_type`'s migration
 comment already anticipated a `'manual'` value — no schema change needed.
 
+### Route-order regression: /campaigns/test-send and /campaigns/create 404ing (2026-08-21, fixed)
+
+User reported SuperAdmin getting a 404 on `/campaigns/test-send`. Traced
+to the earlier same-day route-groups cleanup: `campaigns/{campaign}` (the
+slug wildcard show route) got registered *before* the literal
+`campaigns/create` and `campaigns/test-send` routes. Laravel matches
+routes in registration order, so both literal paths were being captured
+by the wildcard first — "test-send"/"create" got treated as a campaign
+slug, 404ing inside `CampaignController::show()` before privilege
+middleware (even SuperAdmin's bypass) ever got a chance to run. Reordered
+`routes/web.php` so both literal-path groups register before the
+wildcard — `php artisan route:list` and a live `curl` both confirm
+`302` (auth redirect) instead of `404` now.
+
+### Resend to a different email address, from a 'sent' row too (2026-08-21, done)
+
+User flagged that some district/division/zone officer mailboxes are dead
+— their relay accepts the message with a `250` and the recipient never
+reads it, which looks identical to a real delivery in this app (no
+bounce, `status = sent`). The existing per-recipient "Retry" only worked
+on `failed` rows and always resent to the same (bad) address. Added
+`CampaignController::resendToEmail()` + a per-row "Resend to different
+email…" toggle (Alpine `x-show`, no new JS dependency) available on both
+`sent` and `failed` rows: type a corrected address, optionally check
+"Also save as the on-file email" to write it back onto the underlying
+zone/division/district/recipient-list-item
+(`CampaignRecipient::saveEmailToDirectory()`, maps `recipient_type` to
+the right model + column — `jc_email`/`dc_email`/`deo_email`/
+`RecipientListItem.email`) so future campaigns pick up the fix too, not
+just this one resend. Checkbox hidden for `manual` recipients (no backing
+directory row). Wrapped in the same `DB::transaction()`+`try`/`catch`
+convention as `retryRecipient()`.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
