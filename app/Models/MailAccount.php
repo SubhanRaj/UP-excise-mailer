@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['section_id', 'gmail_address', 'app_password', 'smtp_host', 'smtp_port', 'throttle_seconds', 'daily_send_cap', 'is_active'])]
+#[Fillable(['section_id', 'gmail_address', 'app_password', 'smtp_host', 'smtp_port', 'throttle_seconds', 'daily_send_cap', 'is_active', 'imap_host', 'imap_port', 'imap_last_fetched_at'])]
 #[Hidden(['app_password'])]
 class MailAccount extends Model
 {
@@ -20,6 +20,30 @@ class MailAccount extends Model
         return [
             'app_password' => 'encrypted',
             'is_active' => 'boolean',
+            'imap_last_fetched_at' => 'datetime',
+        ];
+    }
+
+    public function repliesEnabled(): bool
+    {
+        return filled($this->imap_host);
+    }
+
+    /**
+     * Same login as SMTP (gmail_address/app_password) — Gmail app passwords and NIC's
+     * mGovCloud credentials both authorize IMAP with the identical username/password used
+     * for sending, so there's no separate credential to store.
+     */
+    public function imapConfig(): array
+    {
+        return [
+            'host' => $this->imap_host,
+            'port' => $this->imap_port,
+            'encryption' => $this->imap_port === 993 ? 'ssl' : false,
+            'validate_cert' => true,
+            'username' => $this->gmail_address,
+            'password' => $this->app_password,
+            'protocol' => 'imap',
         ];
     }
 

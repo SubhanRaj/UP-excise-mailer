@@ -36,13 +36,14 @@ referenced.
 |---|---|
 | `zones` / `divisions` / `districts` | Fixed 5/18/75 org hierarchy, JC/DC/DEO name+email+CUG. Seeded via `GeoOrgSeeder` from `database/seeders/data/*.json`, sourced from the department's own contact lists. **Do not treat this as more authoritative than it is** — some districts may lack email/CUG; verify before a real send. |
 | `sections` | HQ sections (e.g. Enforcement, Admin) — each holds users and one or more `mail_accounts`. |
-| `mail_accounts` | Gmail address + `app_password` (encrypted cast) per section. `throttle_seconds` / `daily_send_cap` bound how fast a campaign sends. |
+| `mail_accounts` | Gmail address + `app_password` (encrypted cast) per section. `throttle_seconds` / `daily_send_cap` bound how fast a campaign sends. Optional `imap_host`/`imap_port` opt an account into reply fetching (see Sending mail below). |
 | `designations` | Job title + `default_privileges` preset applied to new users on that designation. |
 | `users` | `role` (SuperAdmin/Admin/User) + `privileges` JSON, `designation_id` (standard rank), `post` (free-text specific posting/charge, e.g. "Prevention & Enforcement" — distinct from `designation_id`, which is the standard rank), `section_id`. `password` nullable until invite accepted. |
 | `activity_logs` | Full audit trail — every non-GET authenticated request + login/logout, `ActivityLog::record()` (never throws). |
 | `recipient_lists` / `recipient_list_items` | Ad-hoc imported recipient groups (CSV/XLSX/PDF), separate from the fixed zone/division/district directory. |
 | `mail_templates` | Subject + HTML body with `{{variable}}` placeholders, rendered via `MailTemplate::render()`. |
-| `campaigns` / `campaign_recipients` | One campaign = one send job. `recipient_scope` picks zones/divisions/districts/all/a recipient_list; `attachment_mode` is `single_file`, `zip_per_recipient`, or `none`. Each `campaign_recipients` row tracks its own send status independently (`sent_at`/`failed_at` timestamps recorded separately, not inferred from `status` alone). `campaigns.slug` (random-suffixed, not the row id) is the route-binding key — `/campaigns/{campaign}` URLs never expose or let you enumerate the id. |
+| `campaigns` / `campaign_recipients` | One campaign = one send job. `recipient_scope` picks zones/divisions/districts/all/a recipient_list; `attachment_mode` is `single_file`, `zip_per_recipient`, or `none`. Each `campaign_recipients` row tracks its own send status independently (`sent_at`/`failed_at` timestamps recorded separately, not inferred from `status` alone), plus the outgoing `message_id` used to match replies. `campaigns.slug` (random-suffixed, not the row id) is the route-binding key — `/campaigns/{campaign}` URLs never expose or let you enumerate the id. |
+| `campaign_replies` | Inbound replies matched to a `campaign_recipients` row via IMAP header threading — see Sending mail below. |
 
 ## Auth flow
 
@@ -78,6 +79,22 @@ recipient names (strip extension, slugify), try exact match then a
 Levenshtein/fuzzy fallback, and always show a confirmation table before
 allowing "Confirm & Queue" — auto-match is a convenience, not a silent
 default.
+
+### Reply fetching (IMAP)
+
+An account with `mail_accounts.imap_host` set opts into reply fetching —
+`MailAccount::imapConfig()` builds a `webklex/php-imap` client from the same
+credentials already used for SMTP (Gmail app passwords and NIC's mGovCloud
+password both authorize IMAP too). `SendCampaignRecipientMail` captures the
+outgoing `Message-ID` onto `campaign_recipients.message_id` at send time.
+The "Check for replies" button on `/campaigns/{campaign}` runs
+`ImapReplyFetcher::fetch()`: one `SINCE`-bounded IMAP query against INBOX,
+then an in-memory match of each fetched message's `In-Reply-To`/`References`
+headers against this account's known outgoing `message_id`s. Only threaded
+matches are saved, as `campaign_replies` rows linked to the matching
+recipient — the rest of the inbox is read-only to this app (`leaveUnread()`
+never marks anything seen) and never touched. This is manual-trigger only;
+there's no scheduler wired up on this host to poll automatically.
 
 ## Security
 

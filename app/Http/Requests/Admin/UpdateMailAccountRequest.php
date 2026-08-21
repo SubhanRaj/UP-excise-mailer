@@ -23,6 +23,8 @@ class UpdateMailAccountRequest extends FormRequest
             'throttle_seconds' => ['required', 'integer', 'min:1', 'max:3600'],
             'daily_send_cap' => ['nullable', 'integer', 'min:1'],
             'is_active' => ['sometimes', 'boolean'],
+            'imap_host' => ['nullable', 'string', 'max:255'],
+            'imap_port' => ['nullable', 'required_with:imap_host', 'integer', 'min:1', 'max:65535'],
         ];
     }
 

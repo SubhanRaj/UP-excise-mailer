@@ -5,8 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['campaign_id', 'recipient_type', 'recipient_ref_id', 'name', 'email', 'attachment_path', 'matched_via', 'status', 'error_message', 'sent_at', 'failed_at'])]
+#[Fillable(['campaign_id', 'recipient_type', 'recipient_ref_id', 'name', 'email', 'attachment_path', 'matched_via', 'status', 'error_message', 'sent_at', 'failed_at', 'message_id'])]
 class CampaignRecipient extends Model
 {
     protected function casts(): array
@@ -20,6 +21,11 @@ class CampaignRecipient extends Model
     public function campaign(): BelongsTo
     {
         return $this->belongsTo(Campaign::class);
+    }
+
+    public function replies(): HasMany
+    {
+        return $this->hasMany(CampaignReply::class);
     }
 
     /**

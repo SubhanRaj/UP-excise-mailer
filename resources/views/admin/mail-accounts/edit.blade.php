@@ -87,6 +87,21 @@
                 </div>
             </div>
 
+            <div class="border-t border-slate-200 dark:border-slate-700 pt-4">
+                <label class="field-label">Reply Fetching (IMAP)</label>
+                <p class="field-hint mb-2">Optional — lets campaigns on this account show replies received to this mailbox. Leave blank to skip.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <input type="text" id="imap_host" name="imap_host" value="{{ old('imap_host', $mailAccount->imap_host) }}" placeholder="imap.gmail.com" class="field-input @error('imap_host') field-error @enderror">
+                        @error('imap_host')<p class="field-err-msg">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <input type="number" id="imap_port" name="imap_port" value="{{ old('imap_port', $mailAccount->imap_port ?? 993) }}" placeholder="993" class="field-input @error('imap_port') field-error @enderror">
+                        @error('imap_port')<p class="field-err-msg">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+            </div>
+
             <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer select-none">
                 <input type="checkbox" name="is_active" value="1" {{ old('is_active', $mailAccount->is_active) ? 'checked' : '' }}
                        class="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
@@ -105,9 +120,9 @@
     <script>
         (function () {
             const mailProviderPresets = {
-                gmail: { address: 'Gmail Address', password: 'App Password', host: 'smtp.gmail.com', port: 587 },
-                nic: { address: 'NIC Email Address', password: 'Password', host: 'smtp.mgovcloud.in', port: 587 },
-                custom: { address: 'SMTP Username / From Address', password: 'SMTP Password', host: '', port: '' },
+                gmail: { address: 'Gmail Address', password: 'App Password', host: 'smtp.gmail.com', port: 587, imapHost: 'imap.gmail.com', imapPort: 993 },
+                nic: { address: 'NIC Email Address', password: 'Password', host: 'smtp.mgovcloud.in', port: 587, imapHost: 'imap.mgovcloud.in', imapPort: 993 },
+                custom: { address: 'SMTP Username / From Address', password: 'SMTP Password', host: '', port: '', imapHost: '', imapPort: 993 },
             };
 
             document.getElementById('provider')?.addEventListener('change', function () {
@@ -118,6 +133,8 @@
                 document.getElementById('smtp_host').value = preset.host;
                 document.getElementById('smtp_port').value = preset.port;
                 document.getElementById('auth_mode').value = preset.port === 465 ? 'ssl' : 'tls';
+                document.getElementById('imap_host').value = preset.imapHost;
+                document.getElementById('imap_port').value = preset.imapPort;
                 document.getElementById('smtp-advanced').classList.toggle('hidden', this.value !== 'custom');
             });
 

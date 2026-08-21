@@ -41,12 +41,12 @@ class SendCampaignRecipientMail implements ShouldQueue
 
             // Mail::send() is a slow network call — deliberately kept outside DB::transaction()
             // below, so a slow relay never holds a DB transaction (and its row locks) open.
-            Mail::mailer('dynamic')
+            $sent = Mail::mailer('dynamic')
                 ->to($recipient->email)
                 ->send(new CampaignMail($this->renderedSubject, $this->renderedBody, $recipient, $account));
 
-            DB::transaction(function () use ($recipient) {
-                $recipient->update(['status' => 'sent', 'sent_at' => now()]);
+            DB::transaction(function () use ($recipient, $sent) {
+                $recipient->update(['status' => 'sent', 'sent_at' => now(), 'message_id' => $sent?->getMessageId()]);
                 $this->markCampaignCompletedIfDone($recipient->campaign_id);
             });
         } catch (\Throwable $e) {

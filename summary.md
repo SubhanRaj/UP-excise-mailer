@@ -1382,6 +1382,29 @@ cross-linking Zones/Divisions/Districts/Ad-hoc-Lists tabs to both this page
 and `/recipients` so the fixed directory and ad-hoc lists no longer feel
 like two unrelated sections.
 
+### IMAP reply fetching for campaigns (2026-08-21, done)
+
+Added an opt-in IMAP integration so a section can see replies to a campaign
+without leaving the app. Each `mail_accounts` row gets an optional
+`imap_host`/`imap_port` (Gmail preset: `imap.gmail.com:993`; NIC's mGovCloud
+preset: `imap.mgovcloud.in:993`, per NIC's own published IMAP settings at
+mgovcloud.in/mail/help/imap-access.html — same SSL-on-993 shape as Gmail,
+same login as its SMTP credentials) — `webklex/php-imap` v6 (pure-PHP, no
+`ext-imap` needed; this host doesn't have it enabled) is what talks IMAP.
+`SendCampaignRecipientMail` now captures the
+outgoing `Message-ID` (`Illuminate\Mail\SentMessage::getMessageId()`) onto
+`campaign_recipients.message_id`. A "Check for replies" button on
+`/campaigns/{campaign}` (manual only — this host has no cron/scheduler wired
+up, so automatic polling was deliberately left out of this first cut) runs
+`ImapReplyFetcher`: one IMAP `SINCE` query against INBOX (bounded to since
+the account's last fetch, or 90 days back on a first run), then in-memory
+matches each message's `In-Reply-To`/`References` headers against this
+account's known outgoing `message_id`s — a reply only surfaces if it's
+actually threaded to something this app sent; nothing else in the inbox is
+touched, read, or marked seen (`leaveUnread()`). Matches save to a new
+`campaign_replies` table and show inline as an expandable thread under the
+matching recipient row.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
