@@ -140,7 +140,7 @@
                                            class="field-input text-sm">
                                     @if($recipient->recipient_type !== 'manual')
                                     <label class="flex items-center gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400">
-                                        <input type="checkbox" name="save_to_directory" value="1"
+                                        <input type="checkbox" name="save_to_directory" value="1" checked
                                                class="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
                                         Also save as the on-file email for this {{ str_replace('_', ' ', $recipient->recipient_type) }}
                                     </label>

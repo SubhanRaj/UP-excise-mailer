@@ -36,6 +36,11 @@ class RecipientListImportWizard extends Component
     /** One recipient per line — "Name, email@example.com" or a bare email. */
     public string $manualEntries = '';
 
+    public function mount(string $mode = 'file'): void
+    {
+        $this->mode = $mode === 'manual' ? 'manual' : 'file';
+    }
+
     /**
      * Livewire's update endpoint (unlike the initial page GET) isn't covered by the route's
      * own 'recipients.import' privilege middleware, so every action method re-checks

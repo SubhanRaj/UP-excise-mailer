@@ -1,14 +1,35 @@
 <x-layout title="Recipient Lists" page-title="Recipient Lists" page-subtitle="UP Department of Excise — Mailer">
     <x-breadcrumb :items="[['name' => 'Recipient Lists']]" />
 
+    <div class="flex items-center justify-between mb-4 border-b border-slate-200 dark:border-slate-700">
+        <div class="flex items-center gap-1">
+            @foreach(['zones' => 'Zones', 'divisions' => 'Divisions', 'districts' => 'Districts'] as $key => $label)
+            <a href="{{ route('recipients.index', ['tab' => $key]) }}" wire:navigate
+               class="px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                {{ $label }}
+            </a>
+            @endforeach
+            <span class="px-4 py-2 text-sm font-medium border-b-2 -mb-px border-indigo-600 text-indigo-600 dark:text-indigo-400">
+                Ad-hoc Lists
+            </span>
+        </div>
+    </div>
+
     <div class="flex items-center justify-between mb-4">
         <p class="text-sm text-slate-500 dark:text-slate-400">{{ $lists->total() }} list{{ $lists->total() === 1 ? '' : 's' }}</p>
         @if(auth()->user()->hasPrivilege('recipients.import'))
-        <a href="{{ route('recipient-lists.create') }}" wire:navigate
-           class="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 sm:px-4 py-2 rounded-lg transition-colors">
-            <i class="ti ti-upload text-base"></i>
-            <span>Import List</span>
-        </a>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('recipient-lists.create', ['mode' => 'manual']) }}" wire:navigate
+               class="inline-flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium px-3 sm:px-4 py-2 rounded-lg transition-colors">
+                <i class="ti ti-edit text-base"></i>
+                <span>Add Recipients Manually</span>
+            </a>
+            <a href="{{ route('recipient-lists.create') }}" wire:navigate
+               class="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 sm:px-4 py-2 rounded-lg transition-colors">
+                <i class="ti ti-upload text-base"></i>
+                <span>Import File</span>
+            </a>
+        </div>
         @endif
     </div>
 
