@@ -177,8 +177,8 @@
 
     <script>
         // See campaigns/show.blade.php for the same pattern — toasts what changed since last
-        // load (deferred to DOMContentLoaded, SweetAlert2's CDN tag loads later in
-        // layout.blade.php) and auto-refreshes while anything's still pending/queued.
+        // load (deferred to DOMContentLoaded) and auto-refreshes while anything's still
+        // pending/queued.
         document.addEventListener('DOMContentLoaded', function () {
             const key = 'sentMailRecipientStatus';
             const current = @json($sent->getCollection()->mapWithKeys(fn ($r) => [$r->id => ['email' => $r->email, 'status' => $r->status]]));
@@ -197,15 +197,18 @@
                     const describe = (list, label) => list.length
                         ? label + ': ' + list.slice(0, 3).join(', ') + (list.length > 3 ? ` (+${list.length - 3} more)` : '')
                         : '';
-                    const title = [describe(sent, 'Sent'), describe(failed, 'Failed')].filter(Boolean).join(' — ');
-                    Swal.fire({
-                        toast: true, position: 'top-end', showConfirmButton: false, timer: 6000, timerProgressBar: true,
-                        icon: failed.length && ! sent.length ? 'error' : 'success',
-                        title,
-                    });
+                    const message = [describe(sent, 'Sent'), describe(failed, 'Failed')].filter(Boolean).join(' — ');
+                    flashToast(failed.length && ! sent.length ? 'error' : 'success', message);
                 }
             }
         });
+
+        // See campaigns/show.blade.php for why this polls instead of loading its own script tag.
+        function flashToast(type, message, attempt = 0) {
+            if (window.flasher) { window.flasher[type](message); return; }
+            if (attempt > 40) return;
+            setTimeout(() => flashToast(type, message, attempt + 1), 100);
+        }
 
         @if($sent->contains(fn ($r) => in_array($r->status, ['pending', 'queued'], true)))
         setInterval(() => {

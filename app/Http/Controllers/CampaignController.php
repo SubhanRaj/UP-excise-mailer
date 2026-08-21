@@ -153,7 +153,7 @@ class CampaignController extends Controller
             MailTemplate::render($campaign->body, $vars),
         );
 
-        flash()->success("Retrying {$recipient->email}.");
+        flash()->success("Retrying {$recipient->email} via {$campaign->mailAccount->gmail_address}.");
 
         return back();
     }
@@ -260,7 +260,7 @@ class CampaignController extends Controller
             $attachmentChanged => ' — with the corrected attachment.',
             default => '.',
         };
-        flash()->success("Resending to {$newEmail}{$note}");
+        flash()->success("Resending to {$newEmail} via {$campaign->mailAccount->gmail_address}{$note}");
 
         return back();
     }
@@ -285,7 +285,9 @@ class CampaignController extends Controller
             return back();
         }
 
-        flash()->success($count > 0 ? "Found {$count} new ".str('reply')->plural($count).'.' : 'No new replies.');
+        flash()->success($count > 0
+            ? "Found {$count} new ".str('reply')->plural($count)." via {$account->gmail_address}."
+            : "No new replies via {$account->gmail_address}.");
 
         return back();
     }

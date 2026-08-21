@@ -225,8 +225,6 @@
         // Compares this load's per-recipient status against the last one seen for this
         // campaign (sessionStorage) and names exactly who changed — the only way to know a
         // send actually finished when nothing else on this static page pushes a notification.
-        // Deferred to DOMContentLoaded since the SweetAlert2 CDN script tag loads later in
-        // layout.blade.php, after this slot's own content.
         document.addEventListener('DOMContentLoaded', function () {
             const key = 'campaignRecipientStatus_{{ $campaign->slug }}';
             const current = @json($recipients->getCollection()->mapWithKeys(fn ($r) => [$r->id => ['email' => $r->email, 'status' => $r->status]]));
@@ -245,15 +243,22 @@
                     const describe = (list, label) => list.length
                         ? label + ': ' + list.slice(0, 3).join(', ') + (list.length > 3 ? ` (+${list.length - 3} more)` : '')
                         : '';
-                    const title = [describe(sent, 'Sent'), describe(failed, 'Failed')].filter(Boolean).join(' — ');
-                    Swal.fire({
-                        toast: true, position: 'top-end', showConfirmButton: false, timer: 6000, timerProgressBar: true,
-                        icon: failed.length && ! sent.length ? 'error' : 'success',
-                        title,
-                    });
+                    const message = [describe(sent, 'Sent'), describe(failed, 'Failed')].filter(Boolean).join(' — ');
+                    flashToast(failed.length && ! sent.length ? 'error' : 'success', message);
                 }
             }
         });
+
+        // php-flasher's own <script class="flasher-js"> block (layout.blade.php's
+        // @flasher_render) loads window.flasher asynchronously — same wire:navigate/CDN-load
+        // race as the Quill editor and dashboard Chart.js fixes elsewhere in this app. It's
+        // guaranteed to load eventually (@flasher_render runs on every page), so a short poll
+        // is enough; no need to inject our own duplicate <script> tag.
+        function flashToast(type, message, attempt = 0) {
+            if (window.flasher) { window.flasher[type](message); return; }
+            if (attempt > 40) return; // ~4s — something's actually wrong, give up silently
+            setTimeout(() => flashToast(type, message, attempt + 1), 100);
+        }
 
         @if($recipients->contains(fn ($r) => in_array($r->status, ['pending', 'queued'], true)))
         // Auto-refresh while a send is still in flight — the page has no realtime layer, so
