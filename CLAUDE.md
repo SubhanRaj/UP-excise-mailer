@@ -21,31 +21,24 @@ with `{{variable}}` placeholders, and sends either one merged file to
 everyone or a batch of distinct per-recipient files (zip, auto-matched by
 filename with manual override) — through each HQ section's own Gmail SMTP
 app password. System/auth mail (invites, login OTP) goes through Resend
-(`noreply@mail.exciseup.in`), reusing the already-verified sending domain
-from `~/Sites/pdf-markdown-pipeline` / `~/Sites/excise-budget-tracker`.
+(`noreply@mail.exciseup.in`) on an already-verified sending domain.
 
-## Sibling apps this was built from
-
-- `~/Sites/excise-budget-tracker` — source of the zones/divisions/districts
-  schema + seed JSON (copied verbatim into `database/seeders/data/`), the
-  password+OTP auth pattern, flat role+privileges RBAC, `activity_logs` audit
-  table, Tailwind Play CDN + Tabler Icons UI shell.
-- `~/Sites/pdf-markdown-pipeline` — source of the designation/scoping model,
-  signed-URL invite pattern, same UI shell (non-Livewire reference), Apache
-  vhost + `cloudflared` tunnel deploy pattern.
-
-Don't diverge from these patterns without a reason — if a decision here looks
-arbitrary, it's probably copied from one of these two; check there first.
+The auth pattern (password + OTP, flat role+privileges RBAC, signed-URL
+invites), the zone/division/district schema, and the Tailwind Play CDN +
+Tabler Icons UI shell follow conventions shared with this project's other
+Laravel apps in the same deployment — worth knowing if a decision here looks
+arbitrary, though every pattern used is documented here in full, not just
+referenced.
 
 ## Domain model
 
 | Table | Purpose |
 |---|---|
-| `zones` / `divisions` / `districts` | Fixed 5/18/75 org hierarchy, JC/DC/DEO name+email+CUG. Seeded via `GeoOrgSeeder` from `database/seeders/data/*.json` (copied from excise-budget-tracker, ultimately sourced from `~/Projects/excise-revenue-recovery-portal`'s contact CSVs). **Do not treat this as more authoritative than it is** — some districts may lack email/CUG; verify before a real send. |
+| `zones` / `divisions` / `districts` | Fixed 5/18/75 org hierarchy, JC/DC/DEO name+email+CUG. Seeded via `GeoOrgSeeder` from `database/seeders/data/*.json`, sourced from the department's own contact lists. **Do not treat this as more authoritative than it is** — some districts may lack email/CUG; verify before a real send. |
 | `sections` | HQ sections (e.g. Enforcement, Admin) — each holds users and one or more `mail_accounts`. |
 | `mail_accounts` | Gmail address + `app_password` (encrypted cast) per section. `throttle_seconds` / `daily_send_cap` bound how fast a campaign sends. |
-| `designations` | Job title + `default_privileges` preset, same shape as both sibling apps. |
-| `users` | `role` (SuperAdmin/Admin/User) + `privileges` JSON, `designation_id` (standard rank), `post` (free-text specific posting/charge, e.g. "Prevention & Enforcement" — distinct from `designation_id`, same split as `~/Sites/pdf-markdown-pipeline`'s `users.post`), `section_id`. `password` nullable until invite accepted. |
+| `designations` | Job title + `default_privileges` preset applied to new users on that designation. |
+| `users` | `role` (SuperAdmin/Admin/User) + `privileges` JSON, `designation_id` (standard rank), `post` (free-text specific posting/charge, e.g. "Prevention & Enforcement" — distinct from `designation_id`, which is the standard rank), `section_id`. `password` nullable until invite accepted. |
 | `activity_logs` | Full audit trail — every non-GET authenticated request + login/logout, `ActivityLog::record()` (never throws). |
 | `recipient_lists` / `recipient_list_items` | Ad-hoc imported recipient groups (CSV/XLSX/PDF), separate from the fixed zone/division/district directory. |
 | `mail_templates` | Subject + HTML body with `{{variable}}` placeholders, rendered via `MailTemplate::render()`. |
@@ -55,18 +48,17 @@ arbitrary, it's probably copied from one of these two; check there first.
 
 1. Admin creates a user → `URL::temporarySignedRoute('invite.accept', ...)`
    emailed via Resend — this is the "magic link" account-creation step.
-   Fortify's own routes stay `ignoreRoutes()`'d (must be called from
-   `FortifyServiceProvider::register()`, not `boot()` — see
-   excise-budget-tracker's `summary.md` M9 for the exploitable bug this
-   avoids: `/register`, `/reset-password`, `/passkeys/*` reachable if done in
-   `boot()`).
+   Fortify's own routes stay `ignoreRoutes()`'d, called from
+   `FortifyServiceProvider::register()` — calling it from `boot()` instead
+   would leave `/register`, `/reset-password`, `/passkeys/*` reachable
+   unauthenticated, since routes registered before `register()` runs can't be
+   suppressed by a call made in `boot()`.
 2. Invite-accept page sets password, activates the account.
 3. Every login: email+password → 6-digit OTP (cached, not a DB column) →
    emailed via Resend → `/login/otp` verify → `Auth::login()` only on
    success. Rate-limit **both** the login attempt and the OTP-verify
    endpoint server-side (per email+IP) — a client-side resend cooldown alone
-   is a UX nicety, not a security boundary (see
-   `~/Projects/excise-revenue-recovery-portal/SECURITY.md` finding H-01).
+   is a UX nicety, not a security boundary.
 4. RBAC: `User::hasPrivilege()` — SuperAdmin bypass, else check `privileges`
    JSON. `User::canUseMailAccount()` additionally restricts sending to a
    user's own section's mail accounts, unless SuperAdmin.
@@ -111,8 +103,8 @@ load-bearing rules:
 ## UI conventions
 
 Tailwind Play CDN + Inter font + self-hosted Tabler Icons
-(`public/vendor/tabler-icons`, copy from pdf-markdown-pipeline verbatim).
-Blade layout shell at `resources/views/components/{head,sidebar,header,footer}.blade.php`.
+(`public/vendor/tabler-icons`). Blade layout shell at
+`resources/views/components/{head,sidebar,header,footer}.blade.php`.
 Livewire 4 only for genuinely interactive flows (import wizard, campaign
 builder, campaign status). Auth pages and admin CRUD stay plain Blade +
 controllers — don't reach for Livewire where a controller redirect is enough.
@@ -122,9 +114,10 @@ controllers — don't reach for Livewire where a controller redirect is enough.
 - PDF recipient import assumes a text layer (no OCR) — a scanned PDF won't parse.
 - No per-user zone/division/district access scoping yet — any user with
   `campaigns.send` can target any recipient. If a role ever needs to be
-  restricted to e.g. "only their own zone," look at
-  `~/Sites/pdf-markdown-pipeline/MULTI_DEPARTMENT_SCOPE_PLAN.md`'s
-  `hasDepartmentAccess()` pivot-table pattern before inventing a new one.
-- `activity_logs` has no retention/pruning policy yet (pdf-markdown-pipeline's
-  ROADMAP.md notes a 2-year default with CSV export before hard delete —
-  worth the same here once the table has real volume).
+  restricted to e.g. "only their own zone," a `user_id`/`scope_type`/
+  `scope_id` pivot table checked via a `hasDepartmentAccess()`-style method
+  on `User` is the natural shape, added alongside the existing privilege
+  checks rather than replacing them.
+- `activity_logs` has no retention/pruning policy yet — worth a scheduled
+  command that exports rows past some age (e.g. 2 years) to CSV before hard
+  deleting them, once the table has real volume.

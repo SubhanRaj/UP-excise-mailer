@@ -1,10 +1,7 @@
 # Application Flow — Diagrams
 
-**Date:** 2026-08-21
-**Purpose:** Visual map of how this app works — auth, recipient scope resolution, campaign
-send lifecycle, authorization, and the component map. Kept in its own file, same convention as
-`~/Sites/pdf-markdown-pipeline/APP_FLOW.md` and `~/Sites/excise-budget-tracker/ARCHITECTURE.md`
-— linked from `CLAUDE.md`.
+Visual map of how this app works — auth, recipient scope resolution, campaign send lifecycle,
+mail routing, authorization, and the component map. Linked from `CLAUDE.md`.
 
 **Legend** (colors are consistent across every diagram below, though not every diagram uses
 every color):
@@ -51,11 +48,10 @@ flowchart TD
 
 Both the login attempt (`throttle:login`) and the OTP-verify endpoint (`throttle:two-factor`)
 are rate-limited server-side per email+IP — a client-side resend cooldown alone is a UX nicety,
-not a security boundary (see `~/Projects/excise-revenue-recovery-portal/SECURITY.md` H-01, the
-reason this app was built with both throttles from the start). Fortify's own routes stay
-`ignoreRoutes()`'d, called from `FortifyServiceProvider::register()` — doing that in `boot()`
-instead would silently leave `/register`, `/reset-password`, `/passkeys/*` reachable (see
-`excise-budget-tracker`'s `summary.md` M9 for the exploit this avoids).
+not a security boundary. Fortify's own routes stay `ignoreRoutes()`'d, called from
+`FortifyServiceProvider::register()` — calling it from `boot()` instead would leave
+`/register`, `/reset-password`, `/passkeys/*` reachable unauthenticated, since `register()`
+runs before route caching decisions are finalized and `boot()` runs too late to override them.
 
 ## 2. Campaign builder — recipient scope resolution
 
@@ -136,10 +132,10 @@ can't dispatch the same batch twice. Campaign URLs are slug-bound
 names (strip extension, slugify), try exact match → substring-containment → Levenshtein fuzzy,
 then always show a confirmation table — auto-match is a convenience, not a silent default. A
 fuzzy miss doesn't fail the send — the recipient still goes out, just with
-`attachment_path = null`, `matched_via = 'none'`, `status = 'sent'` (confirmed live 2026-08-21:
-"DEO - Shravasti"/"DEO - Bhadohi" missed against `5_Shops_SHRAWASTI.xlsx`/
-`5_Shops_SANT_RAVIDAS_NAGAR_BHADOHI.xlsx` this way). The extracted zip directory is never cleaned
-up after a campaign completes, so `resendToEmail()`'s attachment picker
+`attachment_path = null`, `matched_via = 'none'`, `status = 'sent'`. A spelling or naming
+mismatch between a district's officer title and its file name (e.g. "DEO - Shravasti" vs.
+`5_Shops_SHRAWASTI.xlsx`) is exactly this case. The extracted zip directory is never cleaned up
+after a campaign completes, so `resendToEmail()`'s attachment picker
 (`CampaignController::campaignZipFiles()`) can always re-offer every file the zip originally
 produced — the campaign detail page also flags any `zip_per_recipient` row with no attachment
 with a "No attachment" badge, so a silent miss like this doesn't stay invisible.
@@ -179,10 +175,9 @@ Credentials never sit in `.env` or a long-lived `config()` array — `mailerConf
 mailer fresh from the encrypted `app_password` column at send time, inside the request/job
 that's actually sending. `CampaignMail` explicitly sets `From` to the sending account's own
 address (not the fixed system `MAIL_FROM_ADDRESS`) — most relays, especially NIC's mGovCloud,
-reject a mismatched From outright (`553 Sender is not allowed to relay`, fixed 2026-08-20). A
-relay can still throttle or block an account regardless of a correct From — see `summary.md`'s
-2026-08-20 "Live incident" entry for a confirmed Zoho/mGovCloud account-level block, unrelated
-to anything this app controls.
+reject a mismatched From outright (`553 Sender is not allowed to relay`). A relay can still
+throttle or block an account regardless of a correct From — that's a provider-side decision
+outside this app's control; see `summary.md` for a record of past incidents.
 
 ## 5. Authorization — privileges
 
@@ -225,10 +220,10 @@ privilege — checked in `TestEmailSender`, `CampaignBuilder::confirmAndQueue()`
 `activity_logs` by the global `LogMutation` middleware (not gated by any privilege — this is the
 audit trail itself).
 
-`recipients.manage` (added 2026-08-21) is checked, not `isAdmin()` — the one spot in this app
-that used to hardcode a SuperAdmin-only check instead of the granular privilege convention
-everything else follows; `is_admin` middleware is now reserved for genuinely SuperAdmin-only
-surfaces only (none currently exist outside auth-adjacent internals).
+`recipients.manage` gates zone/division/district contact edits — every route and Livewire
+component in the app checks a granular privilege like this rather than `isAdmin()`; `is_admin`
+middleware is reserved for genuinely SuperAdmin-only surfaces (none currently exist outside
+auth-adjacent internals).
 
 ## 6. Component map
 
