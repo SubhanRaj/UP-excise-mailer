@@ -84,6 +84,8 @@ Route::post('/campaigns/{campaign}/recipients/{recipient}/retry', [CampaignContr
     ->middleware(['auth', 'privilege:campaigns.send', 'throttle:mutations'])->name('campaigns.retry-recipient');
 Route::post('/campaigns/{campaign}/recipients/{recipient}/resend', [CampaignController::class, 'resendToEmail'])
     ->middleware(['auth', 'privilege:campaigns.send', 'throttle:mutations'])->name('campaigns.resend-recipient');
+Route::post('/campaigns/{campaign}/recipients/{recipient}/mark-sent', [CampaignController::class, 'markAsSent'])
+    ->middleware(['auth', 'privilege:campaigns.send', 'throttle:mutations'])->name('campaigns.mark-sent-recipient');
 
 // ── Admin: activity log — SuperAdmin + anyone granted activity-logs.view ────────────────
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'privilege:activity-logs.view', 'throttle:mutations'])->group(function () {

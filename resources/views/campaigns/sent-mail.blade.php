@@ -102,9 +102,9 @@
                     <tr>
                         <td class="px-4 py-3 text-slate-500 dark:text-slate-400 whitespace-nowrap">
                             @if($row->sent_at)
-                                {{ $row->sent_at->format('d M Y, H:i') }}
+                                {{ $row->sent_at->ist()->format('d M Y, H:i') }}
                             @elseif($row->failed_at)
-                                <span class="text-red-400 dark:text-red-500">Failed {{ $row->failed_at->format('d M Y, H:i') }}</span>
+                                <span class="text-red-400 dark:text-red-500">Failed {{ $row->failed_at->ist()->format('d M Y, H:i') }}</span>
                             @else
                                 —
                             @endif
@@ -156,7 +156,7 @@
                             : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400';
                     @endphp
                     <tr>
-                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ $row->created_at?->format('d M Y, H:i') }}</td>
+                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ $row->created_at?->ist()->format('d M Y, H:i') }}</td>
                         <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ $row->metadata['to'] ?? '—' }}</td>
                         <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $row->metadata['via'] ?? '—' }}</td>
                         <td class="px-4 py-3">
@@ -175,15 +175,44 @@
         </div>
     </div>
 
-    @if($sent->contains(fn ($r) => in_array($r->status, ['pending', 'queued'], true)))
     <script>
-        // See campaigns/show.blade.php for why — a resend/retry has no realtime layer to tell
-        // this page it finished, so without this it sits on "Waiting" until manually reloaded.
+        // See campaigns/show.blade.php for the same pattern — toasts what changed since last
+        // load (deferred to DOMContentLoaded, SweetAlert2's CDN tag loads later in
+        // layout.blade.php) and auto-refreshes while anything's still pending/queued.
+        document.addEventListener('DOMContentLoaded', function () {
+            const key = 'sentMailRecipientStatus';
+            const current = @json($sent->getCollection()->mapWithKeys(fn ($r) => [$r->id => ['email' => $r->email, 'status' => $r->status]]));
+            const previous = JSON.parse(sessionStorage.getItem(key) || 'null');
+            sessionStorage.setItem(key, JSON.stringify(current));
+
+            if (previous) {
+                const sent = [], failed = [];
+                for (const [id, row] of Object.entries(current)) {
+                    const before = previous[id];
+                    if (! before || before.status === row.status) continue;
+                    if (row.status === 'sent') sent.push(row.email);
+                    if (row.status === 'failed') failed.push(row.email);
+                }
+                if (sent.length || failed.length) {
+                    const describe = (list, label) => list.length
+                        ? label + ': ' + list.slice(0, 3).join(', ') + (list.length > 3 ? ` (+${list.length - 3} more)` : '')
+                        : '';
+                    const title = [describe(sent, 'Sent'), describe(failed, 'Failed')].filter(Boolean).join(' — ');
+                    Swal.fire({
+                        toast: true, position: 'top-end', showConfirmButton: false, timer: 6000, timerProgressBar: true,
+                        icon: failed.length && ! sent.length ? 'error' : 'success',
+                        title,
+                    });
+                }
+            }
+        });
+
+        @if($sent->contains(fn ($r) => in_array($r->status, ['pending', 'queued'], true)))
         setInterval(() => {
             const active = document.activeElement?.tagName;
             if (active === 'INPUT' || active === 'SELECT' || active === 'TEXTAREA') return;
             window.location.reload();
         }, 6000);
+        @endif
     </script>
-    @endif
 </x-layout>

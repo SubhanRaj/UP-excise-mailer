@@ -36,7 +36,7 @@
                         </td>
                         <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $list->items_count }}</td>
                         <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $list->uploadedBy?->name ?? '—' }}</td>
-                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $list->created_at->format('d M Y') }}</td>
+                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $list->created_at->ist()->format('d M Y') }}</td>
                         <td class="px-4 py-3 text-right">
                             @if(auth()->user()->hasPrivilege('recipients.import'))
                             <form method="POST" action="{{ route('recipient-lists.destroy', $list) }}"

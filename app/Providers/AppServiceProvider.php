@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\ActivityLog;
+use Carbon\Carbon;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -30,6 +31,16 @@ class AppServiceProvider extends ServiceProvider
         // that actually uses WithFileUploads (recipient/officer directory imports, campaign
         // zip attachments).
         config(['livewire.temporary_file_upload.middleware' => ['auth', 'throttle:60,1']]);
+
+        // Timestamps stay stored in UTC (config('app.timezone'), correct for sorting/DST-safety
+        // and to not silently mislabel every already-stored row) — this only converts at
+        // display time. ->ist()->format(...) everywhere a Blade view shows a date; never
+        // change app.timezone itself, or every existing row's displayed time shifts by 5:30
+        // without the underlying data actually changing.
+        Carbon::macro('ist', function () {
+            /** @var Carbon $this */
+            return $this->copy()->timezone('Asia/Kolkata');
+        });
 
         $this->configureRateLimiters();
         $this->configureActivityLogging();

@@ -67,7 +67,7 @@
                                 @endif
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $campaign->created_at->format('d M Y') }}</td>
+                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $campaign->created_at->ist()->format('d M Y') }}</td>
                     </tr>
                     @empty
                     <tr><td colspan="6" class="px-4 py-12 text-center text-slate-400 dark:text-slate-500">
