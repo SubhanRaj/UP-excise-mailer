@@ -149,4 +149,63 @@ class CampaignController extends Controller
 
         return back();
     }
+
+    /**
+     * Resends to a corrected address — for a district/division/zone/list contact whose on-file
+     * email bounced or is simply dead (accepted with a 250 by their relay but never actually
+     * read), not just a same-address retry. Allowed from 'sent' too, not only 'failed', since a
+     * "successful" send against a dead mailbox looks identical to this app.
+     */
+    public function resendToEmail(Request $request, Campaign $campaign, CampaignRecipient $recipient): RedirectResponse
+    {
+        abort_unless($recipient->campaign_id === $campaign->id, 404);
+        abort_unless(in_array($recipient->status, ['sent', 'failed'], true), 400);
+
+        $validated = $request->validate(['email' => ['required', 'email', 'max:255']]);
+        $newEmail = $validated['email'];
+        $saveToDirectory = $request->boolean('save_to_directory');
+
+        $vars = $recipient->resolveVars();
+
+        if (empty($vars)) {
+            flash()->error("Can't resend to {$recipient->name} — the original zone/division/district/list entry no longer exists.");
+
+            return back();
+        }
+
+        $vars['email'] = $newEmail; // always reflect the actual send target, even for types that don't otherwise carry it
+
+        try {
+            DB::transaction(function () use ($recipient, $campaign, $newEmail, $saveToDirectory) {
+                if ($saveToDirectory) {
+                    $recipient->saveEmailToDirectory($newEmail);
+                }
+
+                $recipient->update([
+                    'email' => $newEmail, 'status' => 'pending',
+                    'error_message' => null, 'failed_at' => null, 'sent_at' => null,
+                ]);
+                $campaign->update(['status' => 'queued']);
+            });
+        } catch (\Throwable $e) {
+            Log::error('CampaignController@resendToEmail failed', ['recipient_id' => $recipient->id, 'error' => $e->getMessage()]);
+            flash()->error("Couldn't queue a resend — nothing was changed.");
+
+            return back();
+        }
+
+        SendCampaignRecipientMail::dispatch(
+            $recipient->id,
+            MailTemplate::render($campaign->subject, $vars),
+            MailTemplate::render($campaign->body, $vars),
+        );
+
+        flash()->success(
+            $saveToDirectory
+                ? "Resending to {$newEmail} — saved as the new email on file too."
+                : "Resending to {$newEmail}."
+        );
+
+        return back();
+    }
 }

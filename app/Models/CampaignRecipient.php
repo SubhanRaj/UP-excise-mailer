@@ -51,4 +51,28 @@ class CampaignRecipient extends Model
             default => [],
         };
     }
+
+    /**
+     * Writes a corrected address back onto the zone/division/district/list-item this recipient
+     * was resolved from, so future campaigns targeting the same scope pick it up too — not just
+     * this one resend. Returns false (no-op) for a 'manual' recipient, which has no backing row.
+     */
+    public function saveEmailToDirectory(string $email): bool
+    {
+        [$modelClass, $column] = match ($this->recipient_type) {
+            'zone' => [Zone::class, 'jc_email'],
+            'division' => [Division::class, 'dc_email'],
+            'district' => [District::class, 'deo_email'],
+            'list_item' => [RecipientListItem::class, 'email'],
+            default => [null, null],
+        };
+
+        if (! $modelClass || ! ($model = $modelClass::find($this->recipient_ref_id))) {
+            return false;
+        }
+
+        $model->update([$column => $email]);
+
+        return true;
+    }
 }
