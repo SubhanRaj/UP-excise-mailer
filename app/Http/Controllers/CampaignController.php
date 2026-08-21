@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class CampaignController extends Controller
@@ -52,7 +53,11 @@ class CampaignController extends Controller
             ->paginate(50)
             ->withQueryString();
 
-        return view('campaigns.show', compact('campaign', 'recipients', 'statusCounts', 'sort', 'direction'));
+        $availableAttachments = $campaign->attachment_mode === 'zip_per_recipient'
+            ? $this->campaignZipFiles($campaign)
+            : [];
+
+        return view('campaigns.show', compact('campaign', 'recipients', 'statusCounts', 'sort', 'direction', 'availableAttachments'));
     }
 
     /**
@@ -197,6 +202,18 @@ class CampaignController extends Controller
         $newEmail = $validated['email'];
         $saveToDirectory = $request->boolean('save_to_directory');
 
+        // Never trust a raw path from the client — only a file this campaign's own zip
+        // actually extracted is a legal choice, so the allowed list is recomputed here too.
+        $attachmentPath = $recipient->attachment_path;
+        $attachmentChanged = false;
+        if ($campaign->attachment_mode === 'zip_per_recipient' && $request->has('attachment_path')) {
+            $requested = (string) $request->input('attachment_path');
+            $allowed = $this->campaignZipFiles($campaign);
+            abort_unless($requested === '' || in_array($requested, $allowed, true), 422);
+            $attachmentPath = $requested === '' ? null : $requested;
+            $attachmentChanged = $attachmentPath !== $recipient->attachment_path;
+        }
+
         $vars = $recipient->resolveVars();
 
         if (empty($vars)) {
@@ -208,7 +225,7 @@ class CampaignController extends Controller
         $vars['email'] = $newEmail; // always reflect the actual send target, even for types that don't otherwise carry it
 
         try {
-            DB::transaction(function () use ($recipient, $campaign, $newEmail, $saveToDirectory) {
+            DB::transaction(function () use ($recipient, $campaign, $newEmail, $saveToDirectory, $attachmentPath, $attachmentChanged) {
                 if ($saveToDirectory) {
                     $recipient->saveEmailToDirectory($newEmail);
                 }
@@ -216,6 +233,8 @@ class CampaignController extends Controller
                 $recipient->update([
                     'email' => $newEmail, 'status' => 'pending',
                     'error_message' => null, 'failed_at' => null, 'sent_at' => null,
+                    'attachment_path' => $attachmentPath,
+                    'matched_via' => $attachmentChanged ? 'manual' : $recipient->matched_via,
                 ]);
                 $campaign->update(['status' => 'queued']);
             });
@@ -232,12 +251,29 @@ class CampaignController extends Controller
             MailTemplate::render($campaign->body, $vars),
         );
 
-        flash()->success(
-            $saveToDirectory
-                ? "Resending to {$newEmail} — saved as the new email on file too."
-                : "Resending to {$newEmail}."
-        );
+        $note = match (true) {
+            $saveToDirectory && $attachmentChanged => ' — saved as the new email on file, with the corrected attachment.',
+            $saveToDirectory => ' — saved as the new email on file too.',
+            $attachmentChanged => ' — with the corrected attachment.',
+            default => '.',
+        };
+        flash()->success("Resending to {$newEmail}{$note}");
 
         return back();
+    }
+
+    /** Files this campaign's zip actually extracted (excludes the uploaded zip itself), keyed by their storage path. */
+    private function campaignZipFiles(Campaign $campaign): array
+    {
+        $sample = $campaign->recipients()->whereNotNull('attachment_path')->value('attachment_path');
+
+        if (! $sample) {
+            return [];
+        }
+
+        return collect(Storage::disk('local')->files(dirname($sample)))
+            ->reject(fn (string $f) => str_ends_with($f, '.zip'))
+            ->values()
+            ->all();
     }
 }

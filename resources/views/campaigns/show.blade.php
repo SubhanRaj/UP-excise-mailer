@@ -94,6 +94,9 @@
                         <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $recipient->email }}</td>
                         <td class="px-4 py-3">
                             <span class="badge {{ $statusColor }} capitalize">{{ $recipient->status === 'pending' ? 'Waiting' : $recipient->status }}</span>
+                            @if($campaign->attachment_mode === 'zip_per_recipient' && ! $recipient->attachment_path)
+                            <span class="badge bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">No attachment</span>
+                            @endif
                             @if($recipient->status === 'failed' && $recipient->error_message)
                             <p class="text-xs text-red-500 dark:text-red-400 mt-1">{{ $recipient->error_message }}</p>
                             @endif
@@ -124,12 +127,12 @@
                                     </form>
                                     @endif
                                     <button type="button" x-on:click="open = ! open" class="text-slate-500 dark:text-slate-400 hover:underline">
-                                        Resend to different email…
+                                        Resend{{ $campaign->attachment_mode === 'zip_per_recipient' ? ' / fix attachment' : ' to different email' }}…
                                     </button>
                                 </div>
                                 <form x-show="open" x-cloak method="POST"
                                       action="{{ route('campaigns.resend-recipient', [$campaign, $recipient]) }}"
-                                      data-confirm="Resend this to a different email address?"
+                                      data-confirm="Resend this recipient?"
                                       class="mt-2 text-left bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3 w-72">
                                     @csrf
                                     <label class="field-label">New email address</label>
@@ -141,6 +144,18 @@
                                                class="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
                                         Also save as the on-file email for this {{ str_replace('_', ' ', $recipient->recipient_type) }}
                                     </label>
+                                    @endif
+                                    @if($campaign->attachment_mode === 'zip_per_recipient' && ! empty($availableAttachments))
+                                    <label class="field-label mt-3">Attachment</label>
+                                    <select name="attachment_path" class="field-input text-sm">
+                                        <option value="" @selected(! $recipient->attachment_path)>No attachment</option>
+                                        @foreach($availableAttachments as $path)
+                                        <option value="{{ $path }}" @selected($recipient->attachment_path === $path)>{{ basename($path) }}</option>
+                                        @endforeach
+                                    </select>
+                                    @if(! $recipient->attachment_path)
+                                    <p class="field-hint">This recipient went out with no attachment — pick the right file above.</p>
+                                    @endif
                                     @endif
                                     <button type="submit" class="mt-3 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors">
                                         Send
