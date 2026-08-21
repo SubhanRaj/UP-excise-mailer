@@ -11,6 +11,7 @@ use App\Models\MailTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class CampaignController extends Controller
@@ -123,10 +124,20 @@ class CampaignController extends Controller
             return back();
         }
 
-        $recipient->update(['status' => 'pending', 'error_message' => null, 'failed_at' => null]);
-        // Otherwise the campaign would keep showing "Sent" (completed) with a recipient still
-        // pending underneath it — SendCampaignRecipientMail flips it back once this settles.
-        $campaign->update(['status' => 'queued']);
+        try {
+            DB::transaction(function () use ($recipient, $campaign) {
+                $recipient->update(['status' => 'pending', 'error_message' => null, 'failed_at' => null]);
+                // Otherwise the campaign would keep showing "Sent" (completed) with a recipient
+                // still pending underneath it — SendCampaignRecipientMail flips it back once
+                // this settles.
+                $campaign->update(['status' => 'queued']);
+            });
+        } catch (\Throwable $e) {
+            Log::error('CampaignController@retryRecipient failed', ['recipient_id' => $recipient->id, 'error' => $e->getMessage()]);
+            flash()->error("Couldn't queue a retry for {$recipient->email} — nothing was changed.");
+
+            return back();
+        }
 
         SendCampaignRecipientMail::dispatch(
             $recipient->id,

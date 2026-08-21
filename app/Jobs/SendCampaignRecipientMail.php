@@ -10,6 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -38,21 +39,27 @@ class SendCampaignRecipientMail implements ShouldQueue
         try {
             config(['mail.mailers.dynamic' => $account->mailerConfig()]);
 
+            // Mail::send() is a slow network call — deliberately kept outside DB::transaction()
+            // below, so a slow relay never holds a DB transaction (and its row locks) open.
             Mail::mailer('dynamic')
                 ->to($recipient->email)
                 ->send(new CampaignMail($this->renderedSubject, $this->renderedBody, $recipient, $account));
 
-            $recipient->update(['status' => 'sent', 'sent_at' => now()]);
+            DB::transaction(function () use ($recipient) {
+                $recipient->update(['status' => 'sent', 'sent_at' => now()]);
+                $this->markCampaignCompletedIfDone($recipient->campaign_id);
+            });
         } catch (\Throwable $e) {
             Log::error('SendCampaignRecipientMail failed', [
                 'campaign_recipient_id' => $recipient->id,
                 'error' => $e->getMessage(),
             ]);
 
-            $recipient->update(['status' => 'failed', 'error_message' => substr($e->getMessage(), 0, 500), 'failed_at' => now()]);
+            DB::transaction(function () use ($recipient, $e) {
+                $recipient->update(['status' => 'failed', 'error_message' => substr($e->getMessage(), 0, 500), 'failed_at' => now()]);
+                $this->markCampaignCompletedIfDone($recipient->campaign_id);
+            });
         }
-
-        $this->markCampaignCompletedIfDone($recipient->campaign_id);
     }
 
     /**
