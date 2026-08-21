@@ -45,11 +45,40 @@ class RecipientController extends Controller
         $tab = $request->query('tab', 'zones');
         $tab = in_array($tab, ['zones', 'divisions', 'districts'], true) ? $tab : 'zones';
 
+        // (name column, officer name column, officer email column) per tab — used for both
+        // search and sort so the mapping only lives in one place.
+        [$nameCol, $officerCol, $emailCol] = match ($tab) {
+            'zones' => ['name', 'jc_name', 'jc_email'],
+            'divisions' => ['name', 'dc_name', 'dc_email'],
+            default => ['name', 'deo_name', 'deo_email'],
+        };
+
+        $sortable = ['name' => $nameCol, 'officer' => $officerCol, 'email' => $emailCol];
+        $sort = array_key_exists((string) $request->query('sort'), $sortable) ? $request->query('sort') : 'name';
+        $direction = $request->query('direction') === 'desc' ? 'desc' : 'asc';
+        $q = $request->query('q');
+
+        $query = match ($tab) {
+            'zones' => Zone::query(),
+            'divisions' => Division::with('zone'),
+            default => District::with('division.zone'),
+        };
+
+        $query->when($q, fn ($qq) => $qq->where(
+            fn ($qq2) => $qq2->where($nameCol, 'like', "%{$q}%")
+                ->orWhere($officerCol, 'like', "%{$q}%")
+                ->orWhere($emailCol, 'like', "%{$q}%")
+        ))->orderBy($sortable[$sort], $direction);
+
+        $items = $query->get();
+
         return view('recipients.index', [
             'tab' => $tab,
-            'zones' => $tab === 'zones' ? Zone::orderBy('name')->get() : null,
-            'divisions' => $tab === 'divisions' ? Division::with('zone')->orderBy('name')->get() : null,
-            'districts' => $tab === 'districts' ? District::with('division.zone')->orderBy('name')->get() : null,
+            'sort' => $sort,
+            'direction' => $direction,
+            'zones' => $tab === 'zones' ? $items : null,
+            'divisions' => $tab === 'divisions' ? $items : null,
+            'districts' => $tab === 'districts' ? $items : null,
         ]);
     }
 
