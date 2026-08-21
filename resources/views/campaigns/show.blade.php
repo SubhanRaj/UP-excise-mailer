@@ -100,9 +100,9 @@
                         </td>
                         <td class="px-4 py-3 text-slate-400 dark:text-slate-500">
                             @if($recipient->sent_at)
-                                {{ $recipient->sent_at->format('d M Y, H:i') }}
+                                {{ $recipient->sent_at->ist()->format('d M Y, H:i') }}
                             @elseif($recipient->failed_at)
-                                <span class="text-red-400 dark:text-red-500">Failed {{ $recipient->failed_at->format('d M Y, H:i') }}</span>
+                                <span class="text-red-400 dark:text-red-500">Failed {{ $recipient->failed_at->ist()->format('d M Y, H:i') }}</span>
                             @else
                                 —
                             @endif
@@ -116,6 +116,11 @@
                                           data-confirm="Resend to {{ $recipient->email }}?">
                                         @csrf
                                         <button type="submit" class="text-indigo-600 dark:text-indigo-400 hover:underline">Retry</button>
+                                    </form>
+                                    <form method="POST" action="{{ route('campaigns.mark-sent-recipient', [$campaign, $recipient]) }}"
+                                          data-confirm="Mark {{ $recipient->email }} as sent? Use this only if it was actually sent manually from the section's own inbox.">
+                                        @csrf
+                                        <button type="submit" class="text-emerald-600 dark:text-emerald-400 hover:underline">Mark as sent</button>
                                     </form>
                                     @endif
                                     <button type="button" x-on:click="open = ! open" class="text-slate-500 dark:text-slate-400 hover:underline">
@@ -155,8 +160,41 @@
 
     <div class="mt-4">{{ $recipients->links() }}</div>
 
-    @if($recipients->contains(fn ($r) => in_array($r->status, ['pending', 'queued'], true)))
     <script>
+        // Compares this load's per-recipient status against the last one seen for this
+        // campaign (sessionStorage) and names exactly who changed — the only way to know a
+        // send actually finished when nothing else on this static page pushes a notification.
+        // Deferred to DOMContentLoaded since the SweetAlert2 CDN script tag loads later in
+        // layout.blade.php, after this slot's own content.
+        document.addEventListener('DOMContentLoaded', function () {
+            const key = 'campaignRecipientStatus_{{ $campaign->slug }}';
+            const current = @json($recipients->getCollection()->mapWithKeys(fn ($r) => [$r->id => ['email' => $r->email, 'status' => $r->status]]));
+            const previous = JSON.parse(sessionStorage.getItem(key) || 'null');
+            sessionStorage.setItem(key, JSON.stringify(current));
+
+            if (previous) {
+                const sent = [], failed = [];
+                for (const [id, row] of Object.entries(current)) {
+                    const before = previous[id];
+                    if (! before || before.status === row.status) continue;
+                    if (row.status === 'sent') sent.push(row.email);
+                    if (row.status === 'failed') failed.push(row.email);
+                }
+                if (sent.length || failed.length) {
+                    const describe = (list, label) => list.length
+                        ? label + ': ' + list.slice(0, 3).join(', ') + (list.length > 3 ? ` (+${list.length - 3} more)` : '')
+                        : '';
+                    const title = [describe(sent, 'Sent'), describe(failed, 'Failed')].filter(Boolean).join(' — ');
+                    Swal.fire({
+                        toast: true, position: 'top-end', showConfirmButton: false, timer: 6000, timerProgressBar: true,
+                        icon: failed.length && ! sent.length ? 'error' : 'success',
+                        title,
+                    });
+                }
+            }
+        });
+
+        @if($recipients->contains(fn ($r) => in_array($r->status, ['pending', 'queued'], true)))
         // Auto-refresh while a send is still in flight — the page has no realtime layer, so
         // without this a resend/retry sits showing "Waiting" until someone manually reloads,
         // even after the job has actually finished. Skips a tick if the user is mid-typing
@@ -167,6 +205,6 @@
             if (active === 'INPUT' || active === 'SELECT' || active === 'TEXTAREA') return;
             window.location.reload();
         }, 6000);
+        @endif
     </script>
-    @endif
 </x-layout>

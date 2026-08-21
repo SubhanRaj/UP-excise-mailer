@@ -34,7 +34,7 @@
                             <span class="badge bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">{{ \App\Models\MailTemplate::variableToken($var) }}</span>
                             @endforeach
                         </td>
-                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $template->created_at->format('d M Y') }}</td>
+                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $template->created_at->ist()->format('d M Y') }}</td>
                         <td class="px-4 py-3 text-right">
                             @if(auth()->user()->hasPrivilege('templates.manage'))
                             <div class="flex items-center justify-end gap-2">

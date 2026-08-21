@@ -61,7 +61,7 @@
                     @endphp
                     <tr>
                         <td class="px-4 py-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">
-                            <p>{{ $log->created_at->format('d M Y') }}</p>
+                            <p>{{ $log->created_at->ist()->format('d M Y') }}</p>
                             <p class="text-xs text-slate-400 dark:text-slate-500">{{ $log->created_at->format('H:i:s') }}</p>
                         </td>
                         <td class="px-4 py-3 text-slate-600 dark:text-slate-300">

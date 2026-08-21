@@ -49,7 +49,7 @@
                             @endif
                             <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">{{ $user->designation?->name }}{{ $user->post ? ' ('.$user->post.')' : '' }}{{ $user->section ? ' · '.$user->section->name : '' }}</p>
                         </td>
-                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $user->created_at->format('d M Y') }}</td>
+                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $user->created_at->ist()->format('d M Y') }}</td>
                         <td class="px-4 py-3 text-right">
                             @if(auth()->user()->isAdmin() || $user->role !== 'SuperAdmin')
                             <div class="flex items-center justify-end gap-2">

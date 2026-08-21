@@ -151,6 +151,38 @@ class CampaignController extends Controller
     }
 
     /**
+     * For a recipient actually handled outside this app — sent manually from the section's own
+     * Zoho/Gmail inbox instead of through a campaign — clears the failed state without
+     * dispatching another automated send. Only makes sense for a 'failed' row; a 'sent' one is
+     * already resolved.
+     */
+    public function markAsSent(Campaign $campaign, CampaignRecipient $recipient): RedirectResponse
+    {
+        abort_unless($recipient->campaign_id === $campaign->id, 404);
+        abort_unless($recipient->status === 'failed', 400);
+
+        try {
+            DB::transaction(function () use ($recipient, $campaign) {
+                $recipient->update(['status' => 'sent', 'sent_at' => now(), 'error_message' => null, 'failed_at' => null]);
+
+                $stillPending = $campaign->recipients()->whereIn('status', ['pending', 'queued'])->exists();
+                if (! $stillPending) {
+                    $campaign->update(['status' => 'completed']);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('CampaignController@markAsSent failed', ['recipient_id' => $recipient->id, 'error' => $e->getMessage()]);
+            flash()->error("Couldn't mark {$recipient->email} as sent.");
+
+            return back();
+        }
+
+        flash()->success("Marked {$recipient->email} as sent manually.");
+
+        return back();
+    }
+
+    /**
      * Resends to a corrected address — for a district/division/zone/list contact whose on-file
      * email bounced or is simply dead (accepted with a 250 by their relay but never actually
      * read), not just a same-address retry. Allowed from 'sent' too, not only 'failed', since a
