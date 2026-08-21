@@ -107,7 +107,9 @@ stateDiagram-v2
     [*] --> queued: Confirm & Send (SweetAlert2 confirm required)
     queued --> queued: SendCampaignRecipientMail dispatched per recipient, staggered by throttle_seconds
     queued --> completed: no recipient left pending/queued
-    queued --> queued: retryRecipient resets one failed row to pending
+    queued --> queued: retryRecipient resets one failed row to pending, same email
+    queued --> queued: resendToEmail resets a sent-or-failed row to pending, new email and/or corrected attachment
+    queued --> completed: markAsSent stamps a failed row sent directly, no automated send
 
     [*] --> completed
     completed --> [*]
@@ -132,7 +134,15 @@ can't dispatch the same batch twice. Campaign URLs are slug-bound
 
 `zip_per_recipient` attachment matching runs **before** this: normalize filenames + recipient
 names (strip extension, slugify), try exact match → substring-containment → Levenshtein fuzzy,
-then always show a confirmation table — auto-match is a convenience, not a silent default.
+then always show a confirmation table — auto-match is a convenience, not a silent default. A
+fuzzy miss doesn't fail the send — the recipient still goes out, just with
+`attachment_path = null`, `matched_via = 'none'`, `status = 'sent'` (confirmed live 2026-08-21:
+"DEO - Shravasti"/"DEO - Bhadohi" missed against `5_Shops_SHRAWASTI.xlsx`/
+`5_Shops_SANT_RAVIDAS_NAGAR_BHADOHI.xlsx` this way). The extracted zip directory is never cleaned
+up after a campaign completes, so `resendToEmail()`'s attachment picker
+(`CampaignController::campaignZipFiles()`) can always re-offer every file the zip originally
+produced — the campaign detail page also flags any `zip_per_recipient` row with no attachment
+with a "No attachment" badge, so a silent miss like this doesn't stay invisible.
 
 ## 4. Mail routing — system vs. campaign
 
@@ -193,17 +203,18 @@ flowchart TD
     P -->|doesn't hold it| DENY[403]
 
     OK --> M{Which privilege}
-    M -->|campaigns.send| CS[Build + send campaigns, retry failed recipients]
+    M -->|campaigns.send| CS[Build + send campaigns; retry, resend-to-different-email, mark-as-sent, resend-with-attachment on any recipient]
     M -->|test-email.send| TS[Send test email — own section's mail_accounts only, never Resend]
     M -->|templates.manage| TM[CRUD mail templates]
-    M -->|recipients.import| RI[Import CSV/XLSX/PDF recipient lists]
+    M -->|recipients.manage| RM[Edit Zone/Division/District officer contacts, bulk XLSX officer-directory import]
+    M -->|recipients.import| RI[Import CSV/XLSX/PDF ad-hoc recipient lists, incl. manual entry]
     M -->|sections.manage / mail-accounts.manage / designations.manage / users.manage| ADM[Admin CRUD resource]
     M -->|activity-logs.view| AL[View audit trail]
 
     class R entry
     class A,B,P,M decision
     class ALL,OK good
-    class TS,CS,TM,RI,AL,ADM scoped
+    class TS,CS,TM,RM,RI,AL,ADM scoped
     class G,DENY warn
 ```
 
@@ -213,6 +224,11 @@ privilege — checked in `TestEmailSender`, `CampaignBuilder::confirmAndQueue()`
 `CampaignController::prefillTestSend()`. Every non-GET authenticated request is also logged to
 `activity_logs` by the global `LogMutation` middleware (not gated by any privilege — this is the
 audit trail itself).
+
+`recipients.manage` (added 2026-08-21) is checked, not `isAdmin()` — the one spot in this app
+that used to hardcode a SuperAdmin-only check instead of the granular privilege convention
+everything else follows; `is_admin` middleware is now reserved for genuinely SuperAdmin-only
+surfaces only (none currently exist outside auth-adjacent internals).
 
 ## 6. Component map
 

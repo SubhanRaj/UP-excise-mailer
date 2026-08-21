@@ -1319,6 +1319,18 @@ the real campaign (not just tested): both recipients now show the
 correct `attachment_path` and `status=sent`; confirmed 0 of 76
 recipients in that campaign are left without an attachment.
 
+### Search + sort on /recipients (2026-08-21, done)
+
+Zones/Divisions/Districts tables had no search or sort — just three
+plain, alphabetically-fixed tables (5/18/75 rows each). Added an
+auto-submitting search box (matches name/officer name/officer email for
+the active tab) and sortable Name/Officer Name/Officer Email column
+headers, matching the query-string-driven pattern already used on the
+campaign detail and Sent Mail pages. Per-tab column mapping
+(`jc_name`/`dc_name`/`deo_name` etc.) lives in one place in
+`RecipientController::index()` so search and sort can't drift out of
+sync with each other.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
