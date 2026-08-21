@@ -37,13 +37,13 @@ class CampaignController extends Controller
             ->pluck('count', 'status');
 
         $sortable = ['name', 'email', 'status', 'sent_at'];
-        $sort = in_array($request->get('sort'), $sortable, true) ? $request->get('sort') : 'id';
-        $direction = $request->get('direction') === 'asc' ? 'asc' : 'desc';
+        $sort = in_array($request->query('sort'), $sortable, true) ? $request->query('sort') : 'id';
+        $direction = $request->query('direction') === 'asc' ? 'asc' : 'desc';
 
         $recipients = $campaign->recipients()
-            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->get('status')))
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->query('status')))
             ->when($request->filled('q'), function ($q) use ($request) {
-                $term = '%'.$request->get('q').'%';
+                $term = '%'.$request->query('q').'%';
                 $q->where(fn ($q2) => $q2->where('name', 'like', $term)->orWhere('email', 'like', $term));
             })
             ->orderBy($sort, $direction)
@@ -100,7 +100,7 @@ class CampaignController extends Controller
             return back();
         }
 
-        $recipient->update(['status' => 'pending', 'error_message' => null]);
+        $recipient->update(['status' => 'pending', 'error_message' => null, 'failed_at' => null]);
         // Otherwise the campaign would keep showing "Sent" (completed) with a recipient still
         // pending underneath it — SendCampaignRecipientMail flips it back once this settles.
         $campaign->update(['status' => 'queued']);
