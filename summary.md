@@ -1279,6 +1279,25 @@ reported a resend showing "Waiting" until manual reload even though Zoho
 had already accepted it; queue workers were fine (no failed jobs), it was
 purely that a static Blade page has nothing telling it the job finished.
 
+### IST timestamps, per-recipient toast, manual mark-as-sent (2026-08-21, done)
+
+Three follow-ups from the auto-refresh work above. (1) Every displayed
+timestamp was raw UTC — kept storage in UTC (correct for
+sorting/DST-safety, and changing `config('app.timezone')` outright would
+have silently mislabeled every already-stored row by -5:30, since MySQL
+datetime columns carry no tz info and Laravel doesn't auto-convert on
+read) and instead added `Carbon::macro('ist')` in `AppServiceProvider`,
+converting all 10 `->format('d M Y...')` call sites across 7 views to
+display-only `->ist()->format(...)`. (2) The auto-refresh toast only
+compared aggregate counts, so it just said "1 sent" with no way to tell
+which recipient — rebuilt to snapshot a per-recipient id→status map in
+sessionStorage instead and name the actual email(s) that changed:
+"Sent: a@x.com — Failed: b@y.com". (3) Added "Mark as sent" on failed
+rows (`CampaignController::markAsSent()`) for a recipient the section
+actually emailed manually from their own Zoho/Gmail inbox instead of
+through this app — clears the failed state and stamps `sent_at` without
+dispatching another automated send.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
