@@ -63,12 +63,13 @@ Route::middleware(['auth', 'privilege:recipients.import', 'throttle:mutations'])
 
 Route::get('/campaigns', [CampaignController::class, 'index'])->middleware('auth')->name('campaigns.index');
 Route::get('/campaigns/sent-mail', [CampaignController::class, 'sentMail'])->middleware('auth')->name('campaigns.sent-mail');
-Route::get('/campaigns/{campaign}', [CampaignController::class, 'show'])->middleware('auth')->name('campaigns.show');
 
+// Literal-path routes (create, test-send) must be registered before the campaigns/{campaign}
+// wildcard below — otherwise Laravel matches the wildcard first and "test-send"/"create" get
+// treated as a campaign slug, 404ing on CampaignController::show() instead of ever reaching
+// these routes at all.
 Route::middleware(['auth', 'privilege:campaigns.send'])->group(function () {
     Route::get('/campaigns/create', CampaignBuilder::class)->name('campaigns.create');
-    Route::post('/campaigns/{campaign}/recipients/{recipient}/retry', [CampaignController::class, 'retryRecipient'])
-        ->middleware('throttle:mutations')->name('campaigns.retry-recipient');
 });
 
 Route::middleware(['auth', 'privilege:test-email.send'])->group(function () {
@@ -76,6 +77,11 @@ Route::middleware(['auth', 'privilege:test-email.send'])->group(function () {
     Route::post('/campaigns/test-send/prefill', [CampaignController::class, 'prefillTestSend'])
         ->middleware('throttle:mutations')->name('campaigns.test-send.prefill');
 });
+
+Route::get('/campaigns/{campaign}', [CampaignController::class, 'show'])->middleware('auth')->name('campaigns.show');
+
+Route::post('/campaigns/{campaign}/recipients/{recipient}/retry', [CampaignController::class, 'retryRecipient'])
+    ->middleware(['auth', 'privilege:campaigns.send', 'throttle:mutations'])->name('campaigns.retry-recipient');
 
 // ── Admin: activity log — SuperAdmin + anyone granted activity-logs.view ────────────────
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'privilege:activity-logs.view', 'throttle:mutations'])->group(function () {
