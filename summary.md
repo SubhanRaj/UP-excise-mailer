@@ -1331,6 +1331,20 @@ campaign detail and Sent Mail pages. Per-tab column mapping
 `RecipientController::index()` so search and sort can't drift out of
 sync with each other.
 
+### Route-order regression: /recipient-lists/create 404ing (2026-08-21, fixed)
+
+Same bug class as the earlier `/campaigns/{campaign}` regression (M-session
+2026-08-21): `recipient-lists/{recipientList}` (the `show` route) was
+registered before the literal `recipient-lists/create` route, so Laravel
+matched "create" as a `{recipientList}` route-model-binding id first, failed
+to find a row, and 404'd — for every user, not just the reported
+account. `recipients.import` already correctly gates both the "Add
+Recipient" link and every write action in `RecipientListImportWizard`
+(single manual entry, pasted list, and file upload all go through the same
+privilege check), and the affected user already had that privilege — the
+404 was the actual root cause, not a missing privilege. Fixed by moving the
+`create`/`destroy` group before the `{recipientList}` show route.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
