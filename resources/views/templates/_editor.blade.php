@@ -30,12 +30,26 @@
     .dark #quill-editor .ql-picker-label { color: rgb(148 163 184); }
 </style>
 
-<script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     (function () {
         const editorEl = document.getElementById('quill-editor');
         if (! editorEl) return;
+
+        // wire:navigate clones/re-runs this <script> tag on every SPA visit, but a dynamically
+        // inserted <script src> (unlike one parsed from raw HTML on a hard reload) loads
+        // asynchronously — so `Quill` can still be undefined here on a fresh navigation even
+        // though this same code works after a hard reload. Load it ourselves and wait.
+        if (typeof Quill === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js';
+            script.onload = initEditor;
+            document.head.appendChild(script);
+            return;
+        }
+
+        initEditor();
+
+        function initEditor() {
 
         const quill = new Quill(editorEl, {
             theme: 'snow',
@@ -98,5 +112,6 @@
                 confirmButtonText: 'Close',
             });
         });
+        }
     })();
 </script>

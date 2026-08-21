@@ -9,6 +9,10 @@
                 {{ $label }}
             </a>
             @endforeach
+            <a href="{{ route('recipient-lists.index') }}" wire:navigate
+               class="px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                Ad-hoc Lists
+            </a>
         </div>
         @if(auth()->user()->hasPrivilege('recipients.manage'))
         <a href="{{ route('recipients.import') }}" wire:navigate
