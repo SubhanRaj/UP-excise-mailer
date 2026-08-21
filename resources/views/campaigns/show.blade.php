@@ -106,12 +106,40 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 text-right">
-                            @if($recipient->status === 'failed' && auth()->user()->hasPrivilege('campaigns.send'))
-                            <form method="POST" action="{{ route('campaigns.retry-recipient', [$campaign, $recipient]) }}"
-                                  data-confirm="Resend to {{ $recipient->email }}?">
-                                @csrf
-                                <button type="submit" class="text-indigo-600 dark:text-indigo-400 hover:underline">Retry</button>
-                            </form>
+                            @if(in_array($recipient->status, ['sent', 'failed']) && auth()->user()->hasPrivilege('campaigns.send'))
+                            <div x-data="{ open: false }" class="inline-block text-left">
+                                <div class="flex items-center justify-end gap-3">
+                                    @if($recipient->status === 'failed')
+                                    <form method="POST" action="{{ route('campaigns.retry-recipient', [$campaign, $recipient]) }}"
+                                          data-confirm="Resend to {{ $recipient->email }}?">
+                                        @csrf
+                                        <button type="submit" class="text-indigo-600 dark:text-indigo-400 hover:underline">Retry</button>
+                                    </form>
+                                    @endif
+                                    <button type="button" x-on:click="open = ! open" class="text-slate-500 dark:text-slate-400 hover:underline">
+                                        Resend to different email…
+                                    </button>
+                                </div>
+                                <form x-show="open" x-cloak method="POST"
+                                      action="{{ route('campaigns.resend-recipient', [$campaign, $recipient]) }}"
+                                      data-confirm="Resend this to a different email address?"
+                                      class="mt-2 text-left bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3 w-72">
+                                    @csrf
+                                    <label class="field-label">New email address</label>
+                                    <input type="email" name="email" value="{{ $recipient->email }}" required
+                                           class="field-input text-sm">
+                                    @if($recipient->recipient_type !== 'manual')
+                                    <label class="flex items-center gap-2 mt-2 text-xs text-slate-500 dark:text-slate-400">
+                                        <input type="checkbox" name="save_to_directory" value="1"
+                                               class="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                                        Also save as the on-file email for this {{ str_replace('_', ' ', $recipient->recipient_type) }}
+                                    </label>
+                                    @endif
+                                    <button type="submit" class="mt-3 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors">
+                                        Send
+                                    </button>
+                                </form>
+                            </div>
                             @endif
                         </td>
                     </tr>
