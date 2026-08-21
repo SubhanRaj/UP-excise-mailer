@@ -1126,6 +1126,91 @@ recipients regularly. No code change needed once that's granted — just
 raise `throttle_seconds` / set `daily_send_cap` on that Mail Account
 row (Admin → Mail Accounts) to whatever NIC approves.
 
+### Bullet-list templates rendering as numbered lists in real inboxes (2026-08-21, done)
+
+User reported mail templates with bullet lists sent as "1. 2. 3." in real
+inboxes. Root cause: Quill (the template editor's rich-text component)
+fakes bullet rendering with CSS on `<li data-list="bullet">` inside an
+`<ol>`, plus an empty `<span class="ql-ui">` marker — only looks like a
+bullet inside Quill's own editor stylesheet; sent as raw HTML with no
+Quill CSS in the recipient's inbox, the `<ol>` renders as a plain numbered
+list. Added a `body` set-mutator on `MailTemplate`
+(`sanitizeQuillBody()`, DOMDocument/DOMXPath-based) that swaps a bullet
+`<ol>` for a real `<ul>` with inline spacing styles (email clients ignore
+`<style>` blocks), strips the `ql-ui` marker spans, and leaves genuine
+`<ol data-list="ordered">` numbered lists alone. Runs on every write
+(`store()`/`update()` both funnel through `MailTemplate::create()`/
+`update()`), not just the create form.
+
+### Campaign detail page: sort/filter/search, slug URLs, failed_at (2026-08-21, done)
+
+User asked for delivered/failed counts and a per-recipient retry on the
+per-campaign page — most of this already existed
+(`CampaignController::show()`, `resources/views/campaigns/show.blade.php`)
+from an earlier session, just wasn't linked/known about. Added on top:
+status-filter stat cards (click Waiting/Sent/Failed/Total to filter),
+sortable column headers (name/email/status/sent_at), and a name/email
+search box, all via query-string params so links/pagination stay
+shareable. Separately, user flagged campaign URLs exposing sequential ids
+(`/campaigns/2`) — added `campaigns.slug` (random-suffixed on create, not
+the row id), `Campaign::getRouteKeyName() === 'slug'`, backfilled the two
+existing rows; `route('campaigns.show', $campaign)` calls elsewhere picked
+this up automatically, no other view changes needed. Also added
+`campaign_recipients.failed_at` (stamped in `SendCampaignRecipientMail`'s
+catch block, cleared on retry) since a failed row's "Sent At" column was
+just a blank dash with no indication of *when* it failed — now shows
+"Failed <timestamp>" instead. Rebuilt `campaigns/sent-mail.blade.php` the
+same way (it wasn't actually mislabeling failed sends as sent — the query
+already filtered `status='sent'` correctly — but silently omitting failed
+rows with zero indication read as "broken"; now shows every status with
+the same stat-card/sort/filter/search treatment as the per-campaign page).
+
+### Custom branded error pages (2026-08-21, done)
+
+`php artisan vendor:publish --tag=laravel-errors` as the base, then
+replaced the stock views with an `<x-error-page>` component matching
+`excise-budget-tracker`'s and `pdf-markdown-pipeline`'s pattern exactly —
+same icon/heading/message/single-CTA shape, reusing this app's own
+`x-head` for favicon/title/dark-mode-flash handling.
+401/402/403/404/419/429/500/503 all covered.
+
+### Full security audit + DB-transaction atomicity pass (2026-08-21, done)
+
+User asked for a full security audit against the same checklist already
+run on `excise-budget-tracker`/`pdf-markdown-pipeline`, plus a check of
+how `mail_accounts.app_password` is stored and whether the app is
+exploitable via URL params/SQL injection. Full findings and fixes in
+`SECURITY.md` — most consequential: **production `.env` had
+`APP_ENV=local`/`APP_DEBUG=true`**, caught by the user mid-session — any
+unhandled exception on this public-facing app would have rendered
+Laravel's Whoops debug page, dumping `APP_KEY`/`DB_PASSWORD`/
+`RESEND_API_KEY` straight into the response. Fixed, along with: no
+security response headers/CSP anywhere (added `SecurityHeaders`
+middleware, same pattern as both sibling apps); `SESSION_ENCRYPT`/
+`SESSION_SECURE_COOKIE`/`SESSION_SAME_SITE` all unset or insecure (the
+login OTP was sitting in plaintext in the `sessions` table); Livewire's
+global `upload-file` endpoint had no `auth` middleware at all (3
+components in this app use `WithFileUploads`); three Livewire components
+had no in-component privilege re-check (not independently exploitable —
+Livewire signs snapshots with a checksum — but inconsistent with this
+app's own convention elsewhere); `routes/web.php` had repeated per-route
+middleware arrays instead of proper `Route::middleware()->group()`
+blocks. Also added the 7-day rolling session + remember-me both sibling
+apps run (`SESSION_LIFETIME=10080`) — the checkbox/controller
+wiring/`remember_token` column already existed, purely a missing `.env`
+setting. Confirmed **PASS** on: CSRF, SQL injection (Eloquent/Query
+Builder throughout, one static-string `selectRaw()`), mass assignment
+(`#[Fillable]` on every model), `mail_accounts.app_password` encryption
+(`encrypted` cast + `#[Hidden]`), zip-slip (PHP's `ZipArchive::extractTo()`
+has built-in protection), upload validation, and `.env`'s git-ignore
+status. Same-day follow-up: audited every write path for the
+`DB::transaction()`+`try`/`catch` atomicity convention both sibling apps
+use for multi-step writes — found and fixed two spots making two related
+writes without tying them together (`SendCampaignRecipientMail::handle()`,
+`CampaignController::retryRecipient()`); re-confirmed simple single-model
+CRUD controllers correctly don't need it, matching the sibling apps' own
+convention.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a

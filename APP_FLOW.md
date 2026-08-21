@@ -1,6 +1,6 @@
 # Application Flow — Diagrams
 
-**Date:** 2026-08-20
+**Date:** 2026-08-21
 **Purpose:** Visual map of how this app works — auth, recipient scope resolution, campaign
 send lifecycle, authorization, and the component map. Kept in its own file, same convention as
 `~/Sites/pdf-markdown-pipeline/APP_FLOW.md` and `~/Sites/excise-budget-tracker/ARCHITECTURE.md`
@@ -117,11 +117,18 @@ stateDiagram-v2
 ```
 
 Each `campaign_recipients` row is its own state (`pending → sent` or `pending → failed`,
-independent of the others). `Campaign.status` only reflects the aggregate — it has no `sending`
-write path today (the column exists for it, nothing sets it); it goes `queued → completed` once
-every recipient row has a terminal status (`SendCampaignRecipientMail::
-markCampaignCompletedIfDone()`). `confirmAndQueue()` guards against a second Livewire call with
-a `queued` bool on the component so a double-click can't dispatch the same batch twice.
+independent of the others) — `sent_at`/`failed_at` are recorded separately so a failed row shows
+*when it failed*, not just a blank "Sent At". `Campaign.status` only reflects the aggregate — it
+has no `sending` write path today (the column exists for it, nothing sets it); it goes
+`queued → completed` once every recipient row has a terminal status. Both the success and
+failure branch of `SendCampaignRecipientMail::handle()` wrap their recipient-status write +
+`markCampaignCompletedIfDone()` check in one `DB::transaction()` (kept outside `Mail::send()`
+itself — never hold a DB transaction open across a slow SMTP call), so a crash between the two
+writes can't leave a campaign stuck showing `queued` forever with every recipient already
+resolved. `retryRecipient()` does the same for its own two-write reset. `confirmAndQueue()`
+guards against a second Livewire call with a `queued` bool on the component so a double-click
+can't dispatch the same batch twice. Campaign URLs are slug-bound
+(`Campaign::getRouteKeyName() === 'slug'`, random-suffixed) — never the row id.
 
 `zip_per_recipient` attachment matching runs **before** this: normalize filenames + recipient
 names (strip extension, slugify), try exact match → substring-containment → Levenshtein fuzzy,
@@ -243,8 +250,11 @@ flowchart TD
 
 - **Livewire** (interactive flows only, per `CLAUDE.md`'s UI conventions) — `CampaignBuilder`
   (4-step wizard: recipients → template → attachments → review), `TestEmailSender`,
-  `OfficerDirectoryImportWizard`, `Dashboard`. Auth pages and admin CRUD stay plain Blade +
-  controllers.
+  `OfficerDirectoryImportWizard`, `RecipientListImportWizard`, `Dashboard`. Auth pages and admin
+  CRUD stay plain Blade + controllers. Every component using `WithFileUploads`
+  (`CampaignBuilder`, both import wizards) independently re-checks its own privilege inside each
+  action method — Livewire's AJAX update endpoint isn't covered by the mounting route's
+  middleware, only its initial `GET`.
 - **Controllers** — `CampaignController`, `MailTemplateController`, `RecipientController`,
   `RecipientListController`, `Admin\{SectionController,MailAccountController,
   DesignationController,UserManagementController,ActivityLogController}`,
@@ -258,5 +268,11 @@ flowchart TD
   `recipient_lists`/`recipient_list_items`, `mail_templates`, `campaigns`/`campaign_recipients`.
   Full column-level detail in `CLAUDE.md`'s domain model table.
 
-See `CLAUDE.md` for the narrative version of all of the above, and `summary.md` for the dated
-build log each fix/feature came out of.
+- **Middleware** — `LogMutation` (audit trail) and `SecurityHeaders` (CSP, X-Frame-Options,
+  HSTS, etc. on every response, including error pages) are both registered globally in
+  `bootstrap/app.php`. Custom-branded error pages (`resources/views/errors/*.blade.php`, an
+  `<x-error-page>` component) replace Laravel's default Whoops/plain error views for
+  401/402/403/404/419/429/500/503.
+
+See `CLAUDE.md` for the narrative version of all of the above, `SECURITY.md` for the full
+audited security posture, and `summary.md` for the dated build log each fix/feature came out of.

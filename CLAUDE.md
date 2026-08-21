@@ -5,8 +5,11 @@ domain model, auth flow, sending design, UI, deploy). This file is the living
 architecture reference; [summary.md](./summary.md) tracks what's actually
 built vs. still pending. See [APP_FLOW.md](./APP_FLOW.md) for Mermaid
 diagrams of auth, recipient-scope resolution, campaign send lifecycle,
-authorization, and the component map. Keep all three updated as work
-progresses.
+authorization, and the component map. See [SECURITY.md](./SECURITY.md) for
+the full audited security posture (production `.env` hardening, security
+response headers/CSP, session config, Livewire upload auth, DB-transaction
+atomicity convention) — re-run its checklist whenever a new write path or
+upload surface is added. Keep all four updated as work progresses.
 
 ## What this app is
 
@@ -46,7 +49,7 @@ arbitrary, it's probably copied from one of these two; check there first.
 | `activity_logs` | Full audit trail — every non-GET authenticated request + login/logout, `ActivityLog::record()` (never throws). |
 | `recipient_lists` / `recipient_list_items` | Ad-hoc imported recipient groups (CSV/XLSX/PDF), separate from the fixed zone/division/district directory. |
 | `mail_templates` | Subject + HTML body with `{{variable}}` placeholders, rendered via `MailTemplate::render()`. |
-| `campaigns` / `campaign_recipients` | One campaign = one send job. `recipient_scope` picks zones/divisions/districts/all/a recipient_list; `attachment_mode` is `single_file`, `zip_per_recipient`, or `none`. Each `campaign_recipients` row tracks its own send status independently. |
+| `campaigns` / `campaign_recipients` | One campaign = one send job. `recipient_scope` picks zones/divisions/districts/all/a recipient_list; `attachment_mode` is `single_file`, `zip_per_recipient`, or `none`. Each `campaign_recipients` row tracks its own send status independently (`sent_at`/`failed_at` timestamps recorded separately, not inferred from `status` alone). `campaigns.slug` (random-suffixed, not the row id) is the route-binding key — `/campaigns/{campaign}` URLs never expose or let you enumerate the id. |
 
 ## Auth flow
 
@@ -83,6 +86,27 @@ recipient names (strip extension, slugify), try exact match then a
 Levenshtein/fuzzy fallback, and always show a confirmation table before
 allowing "Confirm & Queue" — auto-match is a convenience, not a silent
 default.
+
+## Security
+
+Full audited posture lives in [SECURITY.md](./SECURITY.md) — don't duplicate it here beyond the
+load-bearing rules:
+
+- Production `.env` must stay `APP_ENV=production`/`APP_DEBUG=false` — `true` dumps `APP_KEY`/
+  `DB_PASSWORD`/`RESEND_API_KEY` on any unhandled exception. `SESSION_ENCRYPT`/
+  `SESSION_SECURE_COOKIE`/`SESSION_SAME_SITE=strict` must all stay on for the same reason
+  (`SESSION_DRIVER=database` means the login OTP itself sits in the `sessions` table).
+- `App\Http\Middleware\SecurityHeaders` (global, `bootstrap/app.php`) sets CSP/X-Frame-Options/
+  HSTS/etc. on every response — if a new CDN is ever added to a Blade view, add its host to the
+  CSP's `script-src`/`style-src` there too, or the browser silently blocks it.
+- Any new Livewire component using `WithFileUploads` gets its own `abort_unless(hasPrivilege(...))`
+  inside every action method, not just relied on via its mounting route's middleware — Livewire's
+  `livewire/update` endpoint isn't covered by the page route's own middleware (see `CampaignBuilder`,
+  `OfficerDirectoryImportWizard`, `RecipientListImportWizard` for the existing pattern).
+- `DB::transaction()` + `try`/`catch` is for **multi-step** writes that must succeed/fail
+  together (e.g. a campaign + its recipient rows, a recipient's status flip + the campaign's
+  completion check) — not every single-statement `Model::create()`/`update()`/`delete()`, which
+  is already atomic on its own. Don't wrap trivial CRUD in a transaction just for the sake of it.
 
 ## UI conventions
 
