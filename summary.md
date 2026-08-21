@@ -1405,6 +1405,50 @@ touched, read, or marked seen (`leaveUnread()`). Matches save to a new
 `campaign_replies` table and show inline as an expandable thread under the
 matching recipient row.
 
+### Dashboard: clickable stats/campaigns, more stat cards, Chart.js send-volume chart (2026-08-21, done)
+
+Recent-campaign rows now link to `/campaigns/{campaign}` (same
+name-cell-links-out pattern as `campaigns/index.blade.php`, for
+consistency), and the four org-hierarchy stat cards (Zones/Divisions/
+Districts/Recipient Lists) link to their respective list pages. Added four
+more stat cards (Total Sent, Failed Sends, Mail Templates, kept Active Mail
+Accounts) and a "last 14 days" send-volume line chart via Chart.js
+(`cdn.jsdelivr.net`, already CSP-whitelisted for Quill/SweetAlert2 — no
+`SecurityHeaders` change needed). `Dashboard::sendVolumeByDay()` zero-fills
+every day in the window so a quiet day shows as a real gap, not a missing
+point. A quick-actions row (New Campaign / Import Recipients / New
+Template, each privilege-gated the same as their own page's button) sits
+above the stats. The Chart.js `<script src>` load hits the exact same
+`wire:navigate`-async-load race as the Quill editor bug — fixed with the
+same load-then-init pattern (`templates/_editor.blade.php`), plus a
+`Chart.getChart(canvas)?.destroy()` guard since re-running this script on
+every SPA visit would otherwise throw "Canvas is already in use" on the
+second visit to `/dashboard`.
+
+### Flash messages: richer text, toasts moved off SweetAlert2 (2026-08-21, done)
+
+Two separate things, both from the same report ("why doesn't a district
+resend get as good a notification as the test-email send?"): first, the
+retry/resend/fetch-replies flash messages didn't name which mail account
+they went through, unlike `TestEmailSender`'s "Test email sent to X via Y" —
+now they do (`CampaignController::retryRecipient/resendToEmail/
+fetchReplies`). Second, the two client-side "Sent: X — Failed: Y" toasts
+that detect an in-flight send finishing while the page is open
+(`campaigns/show.blade.php`, `campaigns/sent-mail.blade.php`) used
+SweetAlert2 — switched to `window.flasher.success()/.error()` so every
+notification in the app (server flash and this client-only one) renders
+through the same self-hosted `php-flasher` theme instead of two different
+notification libraries. `@flasher_render` (`layout.blade.php`) loads
+`window.flasher` asynchronously on every page regardless of whether a flash
+is queued, so calling it from a `DOMContentLoaded` handler hits the same
+CDN/async-load race as the Quill and Chart.js fixes above — handled here
+with a short capped poll instead of a duplicate `<script>` tag, since
+`@flasher_render`'s own script already guarantees the load. SweetAlert2
+stays for the two things flasher structurally can't do — pre-submit
+confirmation modals (`data-confirm`, `layout.blade.php`) and the template
+preview modal (`templates/_editor.blade.php`) — flasher is a toast library
+only, with no confirm/dialog concept.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
