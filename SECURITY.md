@@ -23,6 +23,7 @@ attachment matching, mail template editor, admin CRUD, activity log.
 | M-04 | Livewire's global `upload-file` route had no `auth` middleware | MEDIUM | **FIXED** |
 | L-01 | `SESSION_SAME_SITE` left at framework default (`lax`) | LOW | **FIXED** |
 | L-02 | Three Livewire components (`OfficerDirectoryImportWizard`, `RecipientListImportWizard`, `CampaignBuilder::confirmAndQueue()`) had no in-component privilege re-check | LOW (defense-in-depth) | **FIXED** |
+| L-03 | `SendCampaignRecipientMail::handle()` and `CampaignController::retryRecipient()` each made two related writes (recipient status + campaign status) without a shared transaction | LOW (atomicity) | **FIXED** |
 | — | 7-day rolling session + remember-me was not configured (`SESSION_LIFETIME=120`, no sliding-session guidance) | — | **FIXED (hardening)** |
 | — | `routes/web.php` repeated `['auth', 'privilege:X', 'throttle:mutations']` on individual routes instead of a shared group | — | **CLEANED UP (not a vuln)** |
 
@@ -213,6 +214,49 @@ codebase to all five previously-unguarded methods.
 
 ---
 
+### L-03 · Two Related Writes Made Without a Shared Transaction
+
+**Severity:** LOW (atomicity, not a security exploit — a crash mid-sequence produces an
+inconsistent-but-recoverable state, not a privilege or data-disclosure issue)
+**Status:** FIXED
+
+**Finding:** audited every write path in the app for the same `DB::transaction()` + `try`/`catch`
+convention already used correctly in `CampaignBuilder::confirmAndQueue()` (campaign +
+recipients + job dispatch), `OfficerDirectoryImportWizard::apply()`, `RecipientListImportWizard::save()`,
+and `Admin\UserManagementController::store()`/`update()` (matching `excise-budget-tracker`'s and
+`pdf-markdown-pipeline`'s own convention: wrap **multi-step** writes that must succeed or fail
+together, not every single-statement CRUD call — a lone `Model::create()`/`update()`/`delete()`
+is already atomic at the database level, and both sibling apps' own simple resource controllers
+(`DesignationController`, `SectionController`, equivalents) confirm this — they don't wrap
+single-model CRUD either).
+
+Two genuine gaps found, both making **two related writes** without tying them together:
+
+1. `SendCampaignRecipientMail::handle()` — on success, `$recipient->update(['status' =>
+   'sent', ...])` followed by `markCampaignCompletedIfDone()` (a separate `Campaign::update()`
+   if no recipient is left pending); same shape in the `catch` branch for a failed send. If the
+   process died between the two calls (worker killed, OOM, deploy mid-job), a recipient could be
+   marked `sent`/`failed` while the campaign stayed `queued` forever even though it was actually
+   the last recipient — the exact "stuck on queued" class of bug `DEPLOY.md` already documents a
+   prior live incident of, just from a different cause.
+2. `CampaignController::retryRecipient()` — `$recipient->update([...])` followed by
+   `$campaign->update(['status' => 'queued'])`, with no `try`/`catch` at all — an exception
+   between the two calls (or either one failing) left no way to tell the user anything went
+   wrong; the request would 500 with the recipient possibly reset but the campaign not flipped
+   back to `queued`, or vice versa.
+
+**Fix applied:** both call sites now wrap just their two related writes in `DB::transaction()`
+(so either both land or neither does), with `Mail::send()` in the job kept deliberately *outside*
+the transaction — never hold a DB transaction (and its row locks) open across a slow network
+call to an external SMTP relay, the same principle `pdf-markdown-pipeline`'s `SECURITY.md`
+documents for its own file-move-after-transaction pattern. `retryRecipient()` gained a
+`try`/`catch` matching `UserManagementController`'s convention — logs the failure and flashes an
+error instead of a raw 500, with nothing partially changed since the transaction rolls back.
+
+**Files changed:** `app/Jobs/SendCampaignRecipientMail.php`, `app/Http/Controllers/CampaignController.php`.
+
+---
+
 ### Hardening — 7-Day Rolling Session + Remember-Me
 
 **Status:** APPLIED
@@ -273,6 +317,7 @@ resolve identically before and after.
 | IDOR on campaign URLs — campaign show/retry routes are slug-bound (`Campaign::getRouteKeyName() === 'slug'`, random-suffixed, not the row id — see this session's earlier fix), so a campaign can't be enumerated by walking `/campaigns/1`, `/campaigns/2`, ...; access itself is `auth`-only by design (any authenticated HQ user can view any campaign's send status — same "internal single-department tool, RBAC gates writes not reads" model both sibling apps use) | ✓ PASS |
 | Onboarding link — `URL::temporarySignedRoute`, single-use (gated by `email_verified_at`), 72h expiry, rate-limited (`throttle:login` on `onboarding.store`) | ✓ PASS |
 | Password policy — `Password::defaults()` requires min 8, mixed case, numbers, symbols, applied globally via `AppServiceProvider::boot()` | ✓ PASS |
+| Simple single-model CRUD (`Admin\{Designation,Section,MailAccount}Controller`, `MailTemplateController`, `RecipientListController::destroy()`, `RecipientController`'s zone/division/district edits, `OnboardingController::store()`) — each is exactly one `Model::create()`/`update()`/`delete()` call, already atomic at the database level; deliberately **not** wrapped in `DB::transaction()`, matching `excise-budget-tracker`'s own `DesignationController`/equivalents, which don't wrap single-statement CRUD either | ✓ PASS (by design, re-confirmed this pass) |
 
 ---
 
@@ -283,3 +328,10 @@ found by a full-codebase pass modeled on the same checklist already applied to
 Livewire's global upload-file endpoint, mass-assignment/SQL-injection/CSRF sweep, and a
 component-by-component recheck of every `WithFileUploads` Livewire component's own
 authorization (not just its mounting route's).*
+
+**Follow-up pass, same day:** audited every write path in the app for the `DB::transaction()` +
+`try`/`catch` atomicity convention both sibling apps use for multi-step writes. Found and fixed
+L-03 (two spots making two related writes without tying them together —
+`SendCampaignRecipientMail::handle()` and `CampaignController::retryRecipient()`); re-confirmed
+every simple single-model CRUD controller correctly does **not** need it, matching the sibling
+apps' own convention of reserving transactions for genuinely multi-step operations.
