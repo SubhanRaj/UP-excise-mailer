@@ -6,9 +6,10 @@
 
 **Mail-merge & bulk emailer for the UP Excise Department HQ**
 
-Sends the same file — or a distinct file per recipient — to the department's
-5 zones, 18 divisions, and 75 districts, through each HQ section's own Gmail
-SMTP, without anyone mailing them one at a time by hand.
+A recipient directory (zones/divisions/districts) plus ad-hoc imported lists,
+`{{variable}}` mail-merge templates, and a campaign sender that dispatches
+either one merged file to every recipient or a zip of distinct per-recipient
+files — queued and throttled per sending account.
 
 [![PHP](https://img.shields.io/badge/PHP-8.5-777BB4?logo=php&logoColor=white)](https://php.net)
 [![Laravel](https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel&logoColor=white)](https://laravel.com)
@@ -23,20 +24,22 @@ SMTP, without anyone mailing them one at a time by hand.
 
 ## What it does
 
-- Holds the fixed **zone / division / district** recipient directory (JC/DC/DEO
-  contacts), plus ad-hoc **imported recipient lists** (CSV/XLSX/PDF).
-- Drafts **mail-merge templates** with `{{variable}}` placeholders.
-- Sends a campaign as either **one merged file to everyone**, or a **zip of
-  distinct per-recipient files**, auto-matched by filename with manual override.
-- Sends through each HQ section's own **Gmail SMTP app password** — never a
-  shared account — with per-account throttling and daily caps.
-- Optionally fetches **IMAP replies** threaded back to the exact message a
-  campaign sent, without touching the rest of the section's inbox.
-- Full **activity log** of every authenticated write, and password + OTP auth
-  with signed-URL invites.
-
-Built to replace the department's actual prior workflow: one email, one
-recipient, one attachment, by hand — repeated up to 75 times per file.
+- **Recipient directory**: a fixed zone/division/district org hierarchy
+  (JC/DC/DEO contacts), plus ad-hoc **imported recipient lists** (CSV/XLSX/PDF).
+- **Mail-merge templates** — subject + HTML body with `{{variable}}`
+  placeholders, rendered per recipient at send time.
+- **Campaign sender** — one merged file to every recipient, or a zip of
+  distinct per-recipient files auto-matched to recipients by filename (with
+  manual override before send). Each recipient is a separately queued,
+  throttled job, so a large campaign trickles out instead of bursting.
+- **Per-section SMTP accounts** — every HQ section owns its own outbound
+  mail account (Gmail, NIC/mGovCloud, or any custom SMTP), configured through
+  the app, never a shared credential and never sitting in `.env`.
+- **IMAP reply fetching** (opt-in per account) — pulls only the replies to
+  mail this app actually sent, threaded back via `Message-ID`, without
+  touching or marking read anything else in the section's inbox.
+- **Auth & audit** — password + OTP login, signed-URL invites, flat
+  role+privileges RBAC, and a full activity log of every authenticated write.
 
 ## Docs
 
@@ -52,8 +55,8 @@ recipient, one attachment, by hand — repeated up to 75 times per file.
 
 PHP 8.5 · Laravel 13 · MariaDB · Livewire 4 · Tailwind (Play CDN) + Tabler
 Icons · Quill (rich-text editing) · Fortify (hand-rolled password+OTP auth) ·
-Resend (system/auth mail) · dynamic Gmail SMTP per HQ section (campaign
-mail) · `webklex/php-imap` (reply fetching) · `openspout` / `smalot/pdfparser`
+Resend (system/auth mail) · dynamic per-account SMTP built at send time
+(campaign mail) · `webklex/php-imap` (reply fetching) · `openspout` / `smalot/pdfparser`
 (CSV/XLSX/PDF recipient import) · Apache + Cloudflare Tunnel.
 
 ## Local setup
@@ -77,7 +80,7 @@ php artisan pail                   # optional — live log tailing
 ```
 
 Fill in `.env` before sending real mail: `RESEND_API_KEY` (system/auth mail).
-Per-section Gmail SMTP app passwords are entered through the app itself
+Per-section SMTP credentials are entered through the app itself
 (`/admin/mail-accounts`), not `.env` — see [SECURITY.md](./SECURITY.md).
 
 ## Status
