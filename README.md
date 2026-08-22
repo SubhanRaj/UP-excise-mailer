@@ -1,6 +1,8 @@
 <div align="center">
 
-# ✉️ UP Excise Mailer
+<img src="public/favicon.svg" width="64" height="64" alt="UP Excise Mailer logo">
+
+# UP Excise Mailer
 
 **Mail-merge & bulk emailer for the UP Excise Department HQ**
 
