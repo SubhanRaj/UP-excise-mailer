@@ -1,8 +1,8 @@
 <x-layout title="{{ $campaign->name }}" page-title="{{ $campaign->name }}" page-subtitle="UP Department of Excise — Mailer">
     <x-breadcrumb :items="[['name' => 'Campaigns', 'url' => route('campaigns.index')], ['name' => $campaign->name]]" />
 
-    @if($campaign->mailAccount?->repliesEnabled() && auth()->user()->hasPrivilege('campaigns.send'))
     <div class="flex items-center justify-end gap-3 mb-4 text-sm">
+        @if($campaign->mailAccount?->repliesEnabled() && auth()->user()->hasPrivilege('campaigns.send'))
         <span class="text-slate-400 dark:text-slate-500">
             Replies last checked:
             {{ $campaign->mailAccount->imap_last_fetched_at?->ist()->format('d M Y, H:i') ?? 'never' }}
@@ -14,8 +14,23 @@
                 Check for replies
             </button>
         </form>
+        @endif
+        <div class="relative" x-data="{ open: false }">
+            <button type="button" x-on:click="open = ! open" class="inline-flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium px-3 py-1.5 rounded-lg transition-colors">
+                <i class="ti ti-download text-base"></i> Export
+            </button>
+            <div x-show="open" x-cloak x-on:click.outside="open = false"
+                 class="absolute right-0 mt-1 w-40 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden z-10">
+                @php $exportUrl = fn (string $format) => route('campaigns.export', [$campaign, $format]).'?'.http_build_query(request()->except('page')); @endphp
+                <a href="{{ $exportUrl('xlsx') }}" class="block px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
+                    <i class="ti ti-file-spreadsheet mr-1"></i> Excel (.xlsx)
+                </a>
+                <a href="{{ $exportUrl('pdf') }}" class="block px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
+                    <i class="ti ti-file-type-pdf mr-1"></i> PDF
+                </a>
+            </div>
+        </div>
     </div>
-    @endif
 
     @php
         $statusFilter = request('status');
@@ -24,7 +39,9 @@
             .($statusFilter === $value ? ' ring-2 ring-indigo-500' : '');
     @endphp
 
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+    @php $respondedFilter = request('responded'); @endphp
+
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
         <a href="{{ $baseQuery(['status' => 'pending']) }}" class="{{ $statCardClass('pending') }}">
             <div class="stat-icon bg-slate-50 dark:bg-slate-900/30 text-slate-500 dark:text-slate-400"><i class="ti ti-clock"></i></div>
             <div>
@@ -44,6 +61,13 @@
             <div>
                 <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide font-semibold">Failed</p>
                 <p class="text-2xl font-bold text-slate-800 dark:text-slate-100">{{ $statusCounts['failed'] ?? 0 }}</p>
+            </div>
+        </a>
+        <a href="{{ $baseQuery(['responded' => 'yes']) }}" class="stat-card block text-left transition-shadow{{ $respondedFilter === 'yes' ? ' ring-2 ring-indigo-500' : '' }}">
+            <div class="stat-icon bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400"><i class="ti ti-checkbox"></i></div>
+            <div>
+                <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide font-semibold">Responded</p>
+                <p class="text-2xl font-bold text-slate-800 dark:text-slate-100">{{ $respondedCount }}</p>
             </div>
         </a>
         <a href="{{ $baseQuery(['status' => null]) }}" class="{{ $statCardClass(null) }}">
@@ -69,11 +93,27 @@
             <option value="sent" @selected($statusFilter === 'sent')>Sent</option>
             <option value="failed" @selected($statusFilter === 'failed')>Failed</option>
         </select>
+        <select name="responded" x-data x-on:change="$el.form.requestSubmit()"
+                class="text-sm border border-slate-200 dark:border-slate-700 dark:bg-slate-800 rounded-lg px-3 py-2">
+            <option value="">Responded — any</option>
+            <option value="yes" @selected($respondedFilter === 'yes')>Responded</option>
+            <option value="no" @selected($respondedFilter === 'no')>Not responded</option>
+        </select>
         <noscript><button type="submit" class="text-sm font-medium px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white">Filter</button></noscript>
-        @if(request('q') || $statusFilter)
+        @if(request('q') || $statusFilter || $respondedFilter)
         <a href="{{ route('campaigns.show', $campaign) }}" class="text-sm text-slate-500 hover:underline">Clear</a>
         @endif
     </form>
+
+    @if($recipients->isNotEmpty() && auth()->user()->hasPrivilege('campaigns.send'))
+    <form method="POST" action="{{ route('campaigns.mark-responded', $campaign) }}" class="flex items-center gap-3 mb-3 text-sm">
+        @csrf
+        @foreach($recipients as $recipient)<input type="hidden" name="ids[]" value="{{ $recipient->id }}">@endforeach
+        <span class="text-slate-400 dark:text-slate-500">This page ({{ $recipients->count() }}):</span>
+        <button type="submit" name="responded" value="1" class="text-teal-600 dark:text-teal-400 hover:underline">Mark all responded</button>
+        <button type="submit" name="responded" value="0" class="text-slate-500 dark:text-slate-400 hover:underline">Mark all not responded</button>
+    </form>
+    @endif
 
     <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div class="overflow-x-auto">
@@ -92,6 +132,7 @@
                             </a>
                         </th>
                         @endforeach
+                        <th class="text-center px-4 py-3">Responded</th>
                         <th class="text-right px-4 py-3">Actions</th>
                     </tr>
                 </thead>
@@ -132,6 +173,23 @@
                                 <span class="text-red-400 dark:text-red-500">Failed {{ $recipient->failed_at->ist()->format('d M Y, H:i') }}</span>
                             @else
                                 —
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            @if(auth()->user()->hasPrivilege('campaigns.send'))
+                            <form method="POST" action="{{ route('campaigns.mark-responded', $campaign) }}" class="inline">
+                                @csrf
+                                <input type="hidden" name="ids[]" value="{{ $recipient->id }}">
+                                <input type="hidden" name="responded" value="{{ $recipient->responded_at ? 0 : 1 }}">
+                                <button type="submit" title="{{ $recipient->responded_at ? 'Responded on '.$recipient->responded_at->ist()->format('d M Y, H:i').' — click to unmark' : 'Click to mark as responded' }}"
+                                        class="inline-flex items-center justify-center w-5 h-5 rounded border transition-colors {{ $recipient->responded_at ? 'bg-teal-600 border-teal-600 text-white' : 'border-slate-300 dark:border-slate-600 text-transparent hover:border-teal-500' }}">
+                                    <i class="ti ti-check text-sm"></i>
+                                </button>
+                            </form>
+                            @elseif($recipient->responded_at)
+                            <i class="ti ti-check text-teal-600 dark:text-teal-400" title="Responded on {{ $recipient->responded_at->ist()->format('d M Y, H:i') }}"></i>
+                            @else
+                            <span class="text-slate-300 dark:text-slate-600">—</span>
                             @endif
                         </td>
                         <td class="px-4 py-3 text-right">
@@ -191,7 +249,7 @@
                     </tr>
                     @if($recipient->replies_count > 0)
                     <tr x-show="showReplies" x-cloak>
-                        <td colspan="5" class="px-4 py-3 bg-slate-50 dark:bg-slate-900/50">
+                        <td colspan="6" class="px-4 py-3 bg-slate-50 dark:bg-slate-900/50">
                             <div class="space-y-3">
                                 @foreach($recipient->replies as $reply)
                                 <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3">
@@ -212,7 +270,7 @@
                 </tbody>
                 @empty
                 <tbody>
-                    <tr><td colspan="5" class="px-4 py-8 text-center text-slate-400 dark:text-slate-500">No recipients.</td></tr>
+                    <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400 dark:text-slate-500">No recipients.</td></tr>
                 </tbody>
                 @endforelse
             </table>

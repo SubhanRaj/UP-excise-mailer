@@ -88,6 +88,10 @@ Route::post('/campaigns/{campaign}/recipients/{recipient}/mark-sent', [CampaignC
     ->middleware(['auth', 'privilege:campaigns.send', 'throttle:mutations'])->name('campaigns.mark-sent-recipient');
 Route::post('/campaigns/{campaign}/fetch-replies', [CampaignController::class, 'fetchReplies'])
     ->middleware(['auth', 'privilege:campaigns.send', 'throttle:mutations'])->name('campaigns.fetch-replies');
+Route::post('/campaigns/{campaign}/recipients/mark-responded', [CampaignController::class, 'markResponded'])
+    ->middleware(['auth', 'privilege:campaigns.send', 'throttle:mutations'])->name('campaigns.mark-responded');
+Route::get('/campaigns/{campaign}/export/{format}', [CampaignController::class, 'export'])
+    ->middleware('auth')->name('campaigns.export');
 
 // ── Admin: activity log — SuperAdmin + anyone granted activity-logs.view ────────────────
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'privilege:activity-logs.view', 'throttle:mutations'])->group(function () {

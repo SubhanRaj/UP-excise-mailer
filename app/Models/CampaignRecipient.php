@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['campaign_id', 'recipient_type', 'recipient_ref_id', 'name', 'email', 'attachment_path', 'matched_via', 'status', 'error_message', 'sent_at', 'failed_at', 'message_id'])]
+#[Fillable(['campaign_id', 'recipient_type', 'recipient_ref_id', 'name', 'email', 'attachment_path', 'matched_via', 'status', 'error_message', 'sent_at', 'failed_at', 'message_id', 'responded_at'])]
 class CampaignRecipient extends Model
 {
     protected function casts(): array
@@ -15,6 +15,7 @@ class CampaignRecipient extends Model
         return [
             'sent_at' => 'datetime',
             'failed_at' => 'datetime',
+            'responded_at' => 'datetime',
         ];
     }
 

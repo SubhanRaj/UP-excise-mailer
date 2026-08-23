@@ -1,6 +1,14 @@
 <x-layout title="Edit User" page-title="Edit User" page-subtitle="UP Department of Excise — Mailer">
     <x-breadcrumb :items="[['name' => 'Users', 'url' => route('admin.users.index')], ['name' => $user->name]]" />
 
+    {{-- Standalone sibling form for "Resend activation link" below — nesting it inside
+         #editUserForm is invalid HTML: browsers close the OUTER form early at this form's
+         </form>, silently dropping Designation/Post/Role/Privileges/Save out of the real form
+         for any unactivated user. Same bug class as pdf-markdown-pipeline's M89 incident. --}}
+    <form id="resendActivationForm" method="POST" action="{{ route('admin.users.resend-activation', $user) }}">
+        @csrf
+    </form>
+
     <div class="max-w-2xl bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
         <form method="POST" action="{{ route('admin.users.update', $user) }}" class="space-y-5">
             @csrf
@@ -40,10 +48,7 @@
                     <i class="ti ti-clock-exclamation flex-shrink-0 mt-0.5"></i>
                     This account hasn't been activated yet — the officer hasn't set a password.
                 </span>
-                <form method="POST" action="{{ route('admin.users.resend-activation', $user) }}" class="flex-shrink-0">
-                    @csrf
-                    <button type="submit" class="text-indigo-600 dark:text-indigo-400 font-medium hover:underline whitespace-nowrap">Resend activation link</button>
-                </form>
+                <button type="submit" form="resendActivationForm" class="text-indigo-600 dark:text-indigo-400 font-medium hover:underline whitespace-nowrap flex-shrink-0">Resend activation link</button>
             </div>
             @endif
 

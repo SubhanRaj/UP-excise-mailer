@@ -1449,6 +1449,38 @@ confirmation modals (`data-confirm`, `layout.blade.php`) and the template
 preview modal (`templates/_editor.blade.php`) — flasher is a toast library
 only, with no confirm/dialog concept.
 
+### Manual "responded" tracking + XLSX/PDF export on the campaign page (2026-08-23, done)
+
+IMAP reply fetching needs NIC approval that hasn't landed yet, so until then the only way to
+know a district actually mailed a file back is to look in the section's own inbox by hand — this
+adds a manual tick per recipient so that doesn't also require a side spreadsheet. New
+`campaign_recipients.responded_at` (nullable timestamp) — deliberately independent of the
+IMAP-derived `campaign_replies` rows, not a replacement for them; both signals coexist once IMAP
+is unblocked. `/campaigns/{campaign}` gets: a tick-button per row (submits a one-row form,
+toggles `responded_at` between `now()`/`null`, `campaigns.mark-responded`), "mark all responded /
+not responded" for the current page in one click, a Responded stat card + filter dropdown
+alongside the existing status filter, and an Export dropdown (Excel via the already-installed
+`openspout` writer, reusing `RecipientController::downloadTemplate()`'s
+`streamDownload`+`Writer::openToFile('php://output')` pattern; PDF via newly-added
+`barryvdh/laravel-dompdf`) that both respect whatever status/responded/search filter is currently
+applied. All of it gated behind the existing `campaigns.send` privilege, same as retry/resend/
+mark-sent; the bulk/per-row updates scope through `$campaign->recipients()->whereIn(...)`, so a
+crafted recipient id from a different campaign can't be touched.
+
+Also audited this codebase against `pdf-markdown-pipeline`'s M87–M89 incidents (nested `<form>`
+mangling a Save into a DELETE, `@flasher_render` never echoing, `Collection::groupBy()` dropping
+privilege keys) since they'd just been fixed there. Found and fixed one live instance of the M89
+class here: `admin/users/edit.blade.php` nested a "Resend activation link" `<form>` inside the
+"Save Changes" `<form>` — invalid HTML that made the browser close the outer form early at the
+inner form's `</form>`, silently dropping Designation/Post/Role/Privileges out of the actual
+submit for any unactivated user. Fixed with the same standalone-sibling-form + `form="id"` button
+pattern used in the sibling repo. The other two bug classes were checked and don't apply here: a
+real end-to-end test (queue a flash, render the next page, assert the text appears) passed both
+before and after touching `@flasher_render`, confirming this app's flasher rendering already
+works correctly (unlike the sibling app) — no change made; and the privilege-checkbox partial
+here (`admin/_privilege_checkboxes.blade.php`) uses a plain associative array, never
+`Collection::groupBy()`, so it was never exposed to that bug either.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a

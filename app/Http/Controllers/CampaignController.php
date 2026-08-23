@@ -40,6 +40,8 @@ class CampaignController extends Controller
             ->groupBy('status')
             ->pluck('count', 'status');
 
+        $respondedCount = (clone $campaign->recipients())->whereNotNull('responded_at')->count();
+
         $sortable = ['name', 'email', 'status', 'sent_at'];
         $sort = in_array($request->query('sort'), $sortable, true) ? $request->query('sort') : 'id';
         $direction = $request->query('direction') === 'asc' ? 'asc' : 'desc';
@@ -48,6 +50,7 @@ class CampaignController extends Controller
             ->withCount('replies')
             ->with(['replies' => fn ($q) => $q->orderBy('received_at')])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->query('status')))
+            ->when($request->filled('responded'), fn ($q) => $request->query('responded') === 'yes' ? $q->whereNotNull('responded_at') : $q->whereNull('responded_at'))
             ->when($request->filled('q'), function ($q) use ($request) {
                 $term = '%'.$request->query('q').'%';
                 $q->where(fn ($q2) => $q2->where('name', 'like', $term)->orWhere('email', 'like', $term));
@@ -60,7 +63,7 @@ class CampaignController extends Controller
             ? $this->campaignZipFiles($campaign)
             : [];
 
-        return view('campaigns.show', compact('campaign', 'recipients', 'statusCounts', 'sort', 'direction', 'availableAttachments'));
+        return view('campaigns.show', compact('campaign', 'recipients', 'statusCounts', 'respondedCount', 'sort', 'direction', 'availableAttachments'));
     }
 
     /**
@@ -290,6 +293,65 @@ class CampaignController extends Controller
             : "No new replies via {$account->gmail_address}.");
 
         return back();
+    }
+
+    /** Bulk-toggles the manual "responded" tick — independent of the IMAP-derived campaign_replies rows. */
+    public function markResponded(Request $request, Campaign $campaign): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+            'responded' => ['required', 'boolean'],
+        ]);
+
+        $count = $campaign->recipients()
+            ->whereIn('id', $validated['ids'])
+            ->update(['responded_at' => $validated['responded'] ? now() : null]);
+
+        flash()->success($validated['responded']
+            ? "Marked {$count} ".str('recipient')->plural($count)." as responded."
+            : "Marked {$count} ".str('recipient')->plural($count)." as not responded.");
+
+        return back();
+    }
+
+    public function export(Campaign $campaign, Request $request, string $format): mixed
+    {
+        abort_unless(in_array($format, ['xlsx', 'pdf'], true), 404);
+
+        $recipients = $campaign->recipients()
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->query('status')))
+            ->when($request->filled('responded'), fn ($q) => $request->query('responded') === 'yes' ? $q->whereNotNull('responded_at') : $q->whereNull('responded_at'))
+            ->when($request->filled('q'), function ($q) use ($request) {
+                $term = '%'.$request->query('q').'%';
+                $q->where(fn ($q2) => $q2->where('name', 'like', $term)->orWhere('email', 'like', $term));
+            })
+            ->orderBy('name')
+            ->get();
+
+        $filename = str($campaign->name)->slug()->append('-recipients');
+
+        if ($format === 'xlsx') {
+            return response()->streamDownload(function () use ($recipients) {
+                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                $writer->openToFile('php://output');
+                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Name', 'Email', 'Status', 'Sent At', 'Responded']));
+                foreach ($recipients as $recipient) {
+                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                        $recipient->name ?: '—',
+                        $recipient->email,
+                        $recipient->status === 'pending' ? 'Waiting' : ucfirst($recipient->status),
+                        $recipient->sent_at?->ist()->format('d M Y, H:i') ?? '—',
+                        $recipient->responded_at ? 'Yes' : 'No',
+                    ]));
+                }
+                $writer->close();
+            }, "{$filename}.xlsx", ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('campaigns.export-pdf', compact('campaign', 'recipients'));
+
+        return $pdf->download("{$filename}.pdf");
     }
 
     /** Files this campaign's zip actually extracted (excludes the uploaded zip itself), keyed by their storage path. */
