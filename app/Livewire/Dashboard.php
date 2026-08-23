@@ -27,11 +27,25 @@ class Dashboard extends Component
             'templateCount' => MailTemplate::count(),
             'totalSentCount' => CampaignRecipient::whereNotNull('sent_at')->count(),
             'totalFailedCount' => CampaignRecipient::where('status', 'failed')->count(),
+            'totalRespondedCount' => CampaignRecipient::whereNotNull('responded_at')->count(),
+            'responseRate' => $this->responseRate(),
             'recentCampaigns' => Campaign::with('mailAccount')
-                ->withCount(['recipients', 'recipients as sent_count' => fn ($q) => $q->where('status', 'sent')])
+                ->withCount([
+                    'recipients',
+                    'recipients as sent_count' => fn ($q) => $q->where('status', 'sent'),
+                    'recipients as responded_count' => fn ($q) => $q->whereNotNull('responded_at'),
+                ])
                 ->latest()->limit(5)->get(),
             'sendVolume' => $this->sendVolumeByDay(),
         ]);
+    }
+
+    /** Responded ÷ sent, across every campaign — null (not 0%) when nothing's gone out yet, so the card can show "—" instead of a misleading 0%. */
+    private function responseRate(): ?float
+    {
+        $sent = CampaignRecipient::whereNotNull('sent_at')->count();
+
+        return $sent > 0 ? round(CampaignRecipient::whereNotNull('responded_at')->count() / $sent * 100, 1) : null;
     }
 
     /** Sent-email counts for the last 14 days, zero-filled — feeds the dashboard's Chart.js line chart. */

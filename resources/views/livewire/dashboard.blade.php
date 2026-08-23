@@ -62,7 +62,7 @@
         </a>
     </div>
 
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <div class="stat-card">
             <div class="stat-icon bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
                 <i class="ti ti-circle-check"></i>
@@ -79,6 +79,18 @@
             <div>
                 <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide font-semibold">Failed Sends</p>
                 <p class="text-2xl font-bold text-slate-800 dark:text-slate-100">{{ $totalFailedCount }}</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400">
+                <i class="ti ti-checkbox"></i>
+            </div>
+            <div>
+                <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wide font-semibold">Responded</p>
+                <p class="text-2xl font-bold text-slate-800 dark:text-slate-100">
+                    {{ $totalRespondedCount }}
+                    <span class="text-sm font-normal text-slate-400 dark:text-slate-500">{{ $responseRate === null ? '' : '('.$responseRate.'%)' }}</span>
+                </p>
             </div>
         </div>
         <div class="stat-card">
@@ -124,6 +136,7 @@
                         <th class="pb-2 font-semibold">Name</th>
                         <th class="pb-2 font-semibold">Mail account</th>
                         <th class="pb-2 font-semibold">Status</th>
+                        <th class="pb-2 font-semibold">Responded</th>
                         <th class="pb-2 font-semibold">Created</th>
                     </tr>
                 </thead>
@@ -153,6 +166,15 @@
                                         {{ $statusLabel }}
                                     @endif
                                 </span>
+                            </td>
+                            <td class="py-2 text-slate-500 dark:text-slate-400">
+                                @if($campaign->sent_count > 0)
+                                    <a href="{{ route('campaigns.show', $campaign) }}?responded=yes" wire:navigate class="hover:text-teal-600 dark:hover:text-teal-400">
+                                        {{ $campaign->responded_count }}/{{ $campaign->sent_count }}
+                                    </a>
+                                @else
+                                    —
+                                @endif
                             </td>
                             <td class="py-2 text-slate-400 dark:text-slate-500">{{ $campaign->created_at->diffForHumans() }}</td>
                         </tr>

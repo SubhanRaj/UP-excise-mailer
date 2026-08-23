@@ -1646,6 +1646,14 @@ actions to gain), and its security posture is built around route-level rate limi
 re-deriving the same guarantees as in-component checks would add risk to the most sensitive part
 of the app for no UX benefit. Stays plain controllers, permanently (not just "for now").
 
+### Dashboard shows response tracking (2026-08-23, done)
+
+Added a Responded stat card (count + response rate — sent recipients with `responded_at` set,
+percentage shown only once at least one email has actually gone out, `null` instead of a
+misleading 0% before then) and a Responded column on the Recent Campaigns table (`X/Y`, linking
+into that campaign's detail page pre-filtered to `?responded=yes`). Stat card grid went from 4 to
+5 columns to fit it without leaving an orphan card on its own row.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a
