@@ -2,11 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Designation;
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -17,17 +14,5 @@ class DatabaseSeeder extends Seeder
         $this->call(DesignationSeeder::class);
         $this->call(GeoOrgSeeder::class);
         $this->call(SectionSeeder::class);
-
-        User::firstOrCreate(
-            ['email' => 'redacted-personal-email@example.com'],
-            [
-                'name' => 'Subhan Raj',
-                'username' => User::uniqueUsername('Subhan Raj'),
-                'password' => Hash::make('REDACTED-PASSWORD'),
-                'email_verified_at' => now(),
-                'role' => 'SuperAdmin',
-                'designation_id' => Designation::where('name', 'System Engineer')->first()?->id,
-            ]
-        );
     }
 }

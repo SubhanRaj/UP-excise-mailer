@@ -69,8 +69,7 @@ anywhere yet. This is the very next thing to fix — see M4 below.
 
 ## M3 — Live deploy to mailer.exciseup.in (2026-08-20, done)
 
-- `cloudflared tunnel create up-excise-mailer` (id
-  `REDACTED-TUNNEL-ID`), `~/.cloudflared/mailer-config.yml`
+- `cloudflared tunnel create up-excise-mailer`, `~/.cloudflared/mailer-config.yml`
   (ingress → `http://127.0.0.1:8000`, i.e. straight at `artisan serve` —
   **no Apache vhost yet**, see "Not yet done" #11 below, that needs `sudo`
   which this session didn't have).
@@ -94,7 +93,7 @@ anywhere yet. This is the very next thing to fix — see M4 below.
   workers are also now systemd `--user` units** (see the dated section
   below) — nothing in this app runs as an unsupervised manual process
   anymore.
-- End-to-end verified: invite email sent to redacted-personal-email@example.com via
+- End-to-end verified: invite email sent to a real inbox via
   Resend, onboarding link works through the real domain, login page loads
   at `https://mailer.exciseup.in/login`.
 
@@ -793,7 +792,7 @@ and the admin's typed values aren't hidden) — computed server-side via
 `$errors->has('smtp_host') || $errors->has('smtp_port') ||` (create)
 `old('smtp_host')` not matching a known host, or (edit) the account's
 already-stored host not being Gmail/NIC. Also switched the one existing
-live mail account (`redacted-account@example.gov.in`) from SSL/465 to TLS/587
+live mail account (Task Force section's mGovCloud account) from SSL/465 to TLS/587
 per the user's explicit preference.
 
 ### Real audit-trail gap found: only 2 of the documented actions were ever logged (2026-08-20, done)
@@ -1105,7 +1104,7 @@ static label while `status` is `sending`/`queued`.
 The 7 recipients that failed at the tail of the 2026-08-20 75-district
 campaign (see the "campaign status never left queued" entry above)
 were initially assumed to be `throttle_seconds` (4s) tripping Zoho's
-per-message rate limit — bumped `redacted-account@example.gov.in`'s
+per-message rate limit — bumped the Task Force section's mail account's
 `throttle_seconds` to 20 and re-queued all 7 with a matching 20s stagger
 via `SendCampaignRecipientMail::dispatch(...)->delay(...)` (one-off,
 run directly in tinker — no new UI for this). All 7 failed again with
