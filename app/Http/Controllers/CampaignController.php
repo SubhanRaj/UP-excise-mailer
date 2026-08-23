@@ -102,6 +102,9 @@ class CampaignController extends Controller
             return response()->streamDownload(function () use ($recipients) {
                 $writer = new \OpenSpout\Writer\XLSX\Writer();
                 $writer->openToFile('php://output');
+                // Header-row dropdowns in Excel itself — 3 columns (A-C), header + one row per
+                // recipient (both 1-indexed, matching OpenSpout's AutoFilter coordinates).
+                $writer->getCurrentSheet()->setAutoFilter(new \OpenSpout\Writer\AutoFilter(0, 1, 2, $recipients->count() + 1));
                 $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Name', 'Status', 'Responded']));
                 foreach ($recipients as $recipient) {
                     $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([

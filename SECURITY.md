@@ -25,6 +25,7 @@ in place rather than appending a new dated entry.
 | L-01 | `SESSION_SAME_SITE` left at framework default (`lax`) | LOW | **FIXED** |
 | L-02 | Livewire components (full-page and `WithFileUploads`) had no in-component privilege re-check | LOW (defense-in-depth) | **FIXED** |
 | L-03 | Two write paths made related multi-step writes without a shared transaction | LOW (atomicity) | **FIXED** |
+| L-04 | Livewire's shared `/livewire/update` endpoint (every `wire:click`/`wire:submit` action app-wide) had no rate limit at all | LOW (DoS/abuse, not access control — every action is still privilege-checked per L-02) | **FIXED** |
 
 All other areas audited (below) pass with no remediation required.
 
@@ -226,6 +227,33 @@ each have a `try`/`catch` that logs the failure and flashes an error instead of 
 nothing partially changed since the transaction rolls back.
 
 **Files:** `app/Jobs/SendCampaignRecipientMail.php`, `app/Livewire/CampaignShow.php`.
+
+---
+
+### L-04 · Livewire Update Endpoint Rate Limiting
+
+**Severity:** LOW (DoS/abuse — every action reached through this endpoint is still independently
+privilege-checked per L-02, so this was never an access-control gap, only a "how fast can a
+legitimately-privileged user hammer their own allowed actions" gap) — **Status:** FIXED
+
+Every `wire:click`/`wire:submit` action in the entire app — `CampaignShow`'s retry/resend/mark-
+responded/fetch-replies, all four admin CRUD `*Form`/`*Index` components' create/update/delete,
+`CampaignBuilder`, `TestEmailSender`, the import wizards — is a call through **one shared POST
+endpoint** (`/livewire-{hash}/update`). Livewire registers this route itself at boot with only
+`['web', RequireLivewireHeaders::class]` middleware — no rate limit at all, unlike the
+`throttle:mutations` (60/min per user/IP) that used to sit directly on the plain POST routes these
+actions replaced (`admin.sections.store`, `campaigns.retry-recipient`, etc., all now deleted).
+
+**Current state:** `AppServiceProvider::boot()` calls `Livewire::setUpdateRoute()` to
+re-register that same endpoint with `throttle:mutations` added, preserving Livewire's own
+`RequireLivewireHeaders` check and the exact URI Livewire's frontend JS already expects (the
+`$path` argument the callback receives, not a hardcoded path — a hardcoded path would silently
+break every Livewire action in the app). Verified with a real HTTP round-trip test (not just
+`Livewire::test()`, which drives components in-process and never touches this route at all) that
+posts a genuine signed component snapshot to the live endpoint and confirms both the throttle and
+`RequireLivewireHeaders` middleware are actually attached and don't break normal use.
+
+**Files:** `app/Providers/AppServiceProvider.php`.
 
 ---
 

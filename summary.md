@@ -1616,6 +1616,36 @@ privilege-escalation-guard scenario (a non-admin `users.manage` holder attemptin
 SuperAdmin or an unheld privilege, both must fail validation), and a real-HTTP render check of all
 8 index/create pages for an authenticated SuperAdmin.
 
+### Export quick-filters + Excel AutoFilter; throttled the shared Livewire endpoint; auth stays plain (2026-08-23, done)
+
+Campaign export dropdown now offers "Not responded only" / "Responded only" one-click links for
+both Excel and PDF (previously getting a not-responded-only PDF meant setting the page filter
+first, then exporting) — implemented as pure query-string overrides on the existing export route,
+no backend changes needed since it already respected `?responded=yes|no`. XLSX export also gets a
+native Excel AutoFilter on the header row (`OpenSpout\Writer\AutoFilter`, confirmed by unzipping a
+generated file and checking the `<autoFilter>` element actually landed in the sheet XML) — lets
+staff sort/filter within Excel itself, not just via the app's own filter dropdown.
+
+Closed the SECURITY.md L-04 gap flagged in the previous round: Livewire's shared `/livewire/update`
+endpoint (every `wire:click`/`wire:submit` action in the whole app goes through this one route)
+had no rate limit at all — the `throttle:mutations` that used to sit on the individual POST routes
+these actions replaced didn't carry over automatically. Fixed via
+`Livewire::setUpdateRoute()` in `AppServiceProvider`, re-registering the same endpoint (same URI —
+using the `$path` argument the callback receives, not a hardcoded guess, since Livewire's frontend
+JS already expects a specific prefixed path) with `throttle:mutations` added on top of Livewire's
+own `RequireLivewireHeaders` check. Verified with a real HTTP round-trip test that extracts a
+genuine signed component snapshot from a rendered page and POSTs it to the live endpoint — the
+in-process `Livewire::test()` helper used everywhere else never actually exercises this route, so
+it couldn't have caught a regression here.
+
+Also settled whether auth/onboarding should move to Livewire too, alongside everything else this
+session converted: no — user's call, matching the recommendation. Login/OTP/onboarding is a
+handful of one-shot form submits with nothing to update in place (no live filtering/search/bulk
+actions to gain), and its security posture is built around route-level rate limiters
+(`RateLimiter::for('login'/'two-factor')`) that are simple and auditable as route middleware —
+re-deriving the same guarantees as in-component checks would add risk to the most sensitive part
+of the app for no UX benefit. Stays plain controllers, permanently (not just "for now").
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a

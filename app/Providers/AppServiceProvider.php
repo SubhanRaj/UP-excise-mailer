@@ -11,8 +11,10 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -41,6 +43,15 @@ class AppServiceProvider extends ServiceProvider
         // that actually uses WithFileUploads (recipient/officer directory imports, campaign
         // zip attachments).
         config(['livewire.temporary_file_upload.middleware' => ['auth', 'throttle:60,1']]);
+
+        // Every wire:click/wire:submit action app-wide — retry/resend/mark-responded, admin
+        // CRUD create/update/delete, etc. — goes through this ONE shared endpoint, and
+        // Livewire's own default registration carries no rate limit at all (unlike the
+        // throttle:mutations that used to sit directly on the old POST routes these actions
+        // replaced). Re-registering it here with the same limiter closes that gap app-wide in
+        // one place, rather than needing every component's every action to somehow self-throttle.
+        Livewire::setUpdateRoute(fn ($handle, $path) => Route::post($path, $handle)
+            ->middleware(['web', \Livewire\Mechanisms\HandleRequests\RequireLivewireHeaders::class, 'throttle:mutations']));
 
         // Timestamps stay stored in UTC (config('app.timezone'), correct for sorting/DST-safety
         // and to not silently mislabel every already-stored row) — this only converts at

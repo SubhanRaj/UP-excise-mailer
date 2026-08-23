@@ -18,16 +18,40 @@
                 <i class="ti ti-download text-base"></i> Export
             </button>
             <div x-show="open" x-cloak x-on:click.outside="open = false"
-                 class="absolute right-0 mt-1 w-40 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden z-10">
+                 class="absolute right-0 mt-1 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden z-10">
                 @php
-                    $exportParams = array_filter(['status' => $statusFilter, 'responded' => $respondedFilter, 'q' => $search]);
-                    $exportUrl = fn (string $format) => route('campaigns.export', [$campaign, $format]).'?'.http_build_query($exportParams);
+                    // $responded: null keeps whatever's currently filtered on the page; 'yes'/'no'
+                    // forces the export to that list regardless of the page's own filter, so
+                    // "PDF of who hasn't responded" is one click, not "set the filter, then export".
+                    $exportUrl = function (string $format, ?string $responded = null) use ($statusFilter, $respondedFilter, $search, $campaign) {
+                        $params = array_filter([
+                            'status' => $statusFilter,
+                            'responded' => $responded ?? $respondedFilter,
+                            'q' => $search,
+                        ]);
+
+                        return route('campaigns.export', [$campaign, $format]).'?'.http_build_query($params);
+                    };
                 @endphp
-                <a href="{{ $exportUrl('xlsx') }}" class="block px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
-                    <i class="ti ti-file-spreadsheet mr-1"></i> Excel (.xlsx)
+                <p class="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Excel</p>
+                <a href="{{ $exportUrl('xlsx') }}" class="block px-3 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
+                    <i class="ti ti-file-spreadsheet mr-1"></i> All (current filters)
                 </a>
-                <a href="{{ $exportUrl('pdf') }}" class="block px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
-                    <i class="ti ti-file-type-pdf mr-1"></i> PDF
+                <a href="{{ $exportUrl('xlsx', 'no') }}" class="block px-3 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
+                    <i class="ti ti-file-spreadsheet mr-1"></i> Not responded only
+                </a>
+                <a href="{{ $exportUrl('xlsx', 'yes') }}" class="block px-3 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
+                    <i class="ti ti-file-spreadsheet mr-1"></i> Responded only
+                </a>
+                <p class="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-700">PDF</p>
+                <a href="{{ $exportUrl('pdf') }}" class="block px-3 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
+                    <i class="ti ti-file-type-pdf mr-1"></i> All (current filters)
+                </a>
+                <a href="{{ $exportUrl('pdf', 'no') }}" class="block px-3 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
+                    <i class="ti ti-file-type-pdf mr-1"></i> Not responded only
+                </a>
+                <a href="{{ $exportUrl('pdf', 'yes') }}" class="block px-3 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
+                    <i class="ti ti-file-type-pdf mr-1"></i> Responded only
                 </a>
             </div>
         </div>
