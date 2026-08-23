@@ -1,7 +1,7 @@
 # Security Posture — UP Excise Mailer
 
 **Stack:** Laravel 13, PHP 8.5, MariaDB, Cloudflare Tunnel (HTTPS), on-premise deployment
-(`php artisan serve` behind `cloudflared`, no Apache vhost yet — see `DEPLOY.md`), public
+(Apache vhost on `127.0.0.1:8082` behind `cloudflared` — see `DEPLOY.md`), public
 internet-facing at `mailer.exciseup.in`.
 **Scope:** Full application — auth/OTP, RBAC/privileges, campaign send pipeline (dynamic
 per-account mailer), recipient import (CSV/XLSX/PDF, Livewire file uploads), zip-per-recipient

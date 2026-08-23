@@ -1668,13 +1668,14 @@ into that campaign's detail page pre-filtered to `?responded=yes`). Stat card gr
    deciding one way or the other rather than mixing. Also worth a test for
    `RecipientImportParser` and for the Blade `{{ }}`-in-`{{ }}` footgun
    (see M4) now that it's bitten twice in this codebase.
-3. **Apache vhost on port 8082** — needs `sudo` (this session didn't have
-   it; ask the user for it directly, or have them run the vhost-creation
-   commands themselves). Once done: switch `~/.cloudflared/mailer-config.yml`
-   ingress from `http://127.0.0.1:8000` to `http://127.0.0.1:8082`, add
-   `storage`/`bootstrap/cache` to the Apache sandbox override's
-   `ReadWritePaths=` (same gotcha budget-tracker hit), retire
-   `up-excise-mailer-app.service` (Apache/php-fpm replaces `artisan
-   serve` at that point, matching how the two sibling apps run — see the
-   2026-08-20 systemd section above for why this app currently still
-   needs an app-serving unit that they don't), write `DEPLOY.md`.
+### Apache vhost on port 8082, retiring `artisan serve` (2026-08-23, done)
+
+The app now runs behind a real Apache vhost, matching `excise-budget-tracker` (port 8081) and
+`pdf-markdown-pipeline` (port 8080): `/etc/apache2/sites-available/up-excise-mailer.conf` on
+`127.0.0.1:8082`, `Listen 8082` added to `ports.conf`, this app's `storage`/`bootstrap/cache`
+added to the shared Apache sandbox override's `ReadWritePaths=` (edited in place, not
+overwritten). `~/.cloudflared/mailer-config.yml`'s ingress now points at `127.0.0.1:8082`
+instead of `127.0.0.1:8000`. `up-excise-mailer-app.service` (`php artisan serve`) is stopped,
+disabled, and removed — the queue workers and tunnel unit are unaffected. Verified end-to-end:
+`mailer.exciseup.in/login` returns 200 through the tunnel, and directly against `127.0.0.1:8082`.
+`DEPLOY.md` updated to describe the Apache setup as current state rather than a pending step.
