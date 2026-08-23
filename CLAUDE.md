@@ -123,18 +123,13 @@ Tailwind Play CDN + Inter font + self-hosted Tabler Icons
 (`public/vendor/tabler-icons`). Blade layout shell at
 `resources/views/components/{head,sidebar,header,footer}.blade.php`.
 
-**This app is Livewire-first by design, not core Laravel with Livewire bolted on** — any page
-with per-row actions, filters, search, or anything that would otherwise reload the page belongs
-in a full-page Livewire component (`#[Layout(...)]` or `->layout(...)` on the return of
-`render()`, mounted directly off a route — see `CampaignBuilder`, `TestEmailSender`,
-`CampaignShow`), not a controller + plain Blade form. A plain `<form method="POST">` always does
-a real browser round-trip regardless of anything else on the page (including `wire:navigate`,
-which only intercepts GET link clicks) — every one of those round-trips on an otherwise-Livewire
-page is a bug to fix, not an acceptable default. Plain controllers remain fine for the auth flow
-(login/OTP/onboarding — no interactivity to speak of) and for a handful of simple one-shot
-redirects (`prefillTestSend`, file exports); admin CRUD (sections/mail accounts/designations/
-users) should move to Livewire components as those pages are next touched, following the pattern
-above, rather than staying plain Blade by default.
+Livewire-first: any page with per-row actions, filters, search, or anything that would otherwise
+reload the page is a full-page Livewire component (`#[Layout(...)]` or `->layout(...)` on the
+return of `render()`, mounted directly off a route — `CampaignBuilder`, `TestEmailSender`,
+`CampaignShow`, all of admin CRUD). A `<form method="POST">` always does a real browser round-trip
+regardless of `wire:navigate` (which only intercepts GET link clicks), so that's a bug to fix, not
+an acceptable default, on an otherwise-Livewire page. Plain controllers: auth (login/OTP/
+onboarding) and a few one-shot redirects (`prefillTestSend`, file exports).
 
 ## Known ceilings (deliberate, not oversights)
 
@@ -148,3 +143,11 @@ above, rather than staying plain Blade by default.
 - `activity_logs` has no retention/pruning policy yet — worth a scheduled
   command that exports rows past some age (e.g. 2 years) to CSV before hard
   deleting them, once the table has real volume.
+
+## Writing docs/commits/comments
+
+State it, don't frame it as a contrast. "Livewire-first" beats "Livewire-first, not core Laravel
+with Livewire bolted on" — a developer reading a Livewire-first codebase already knows what it
+isn't. Skip the "X, not Y" pairing, the recap-before-the-point, the reason restated after it's
+already obvious from the fact itself. If a sentence would be exactly as clear with its second half
+cut, cut it.

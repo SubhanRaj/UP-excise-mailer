@@ -46,15 +46,6 @@ files — queued and throttled per sending account.
 - **Auth & audit** — password + OTP login, signed-URL invites, flat
   role+privileges RBAC, and a full activity log of every authenticated write.
 
-**Livewire-first, not core Laravel with Livewire bolted on.** Every page with
-filtering, search, or per-row actions — the campaign detail page, all of
-admin CRUD — is a full-page Livewire component: actions are `wire:click`/
-`wire:submit` (AJAX, no page reload), not `<form method="POST">` round-trips.
-Auth (login/OTP/onboarding) is the one deliberate exception — a handful of
-one-shot form submits with nothing to update in place, kept as plain
-controllers so its rate-limit guarantees stay simple, auditable route
-middleware instead of re-derived in-component checks.
-
 ## Docs
 
 | File | Covers |
@@ -67,13 +58,12 @@ middleware instead of re-derived in-component checks.
 
 ## Stack
 
-PHP 8.5 · Laravel 13 · MariaDB · Livewire 4 (the primary UI layer, not an
-add-on) · Tailwind (Play CDN) + Tabler Icons · Quill (rich-text editing) ·
-Fortify (hand-rolled password+OTP auth) · Resend (system/auth mail) ·
-dynamic per-account SMTP built at send time (campaign mail) ·
-`webklex/php-imap` (reply fetching) · `openspout` (CSV/XLSX recipient import
-+ Excel export, incl. AutoFilter) · `smalot/pdfparser` (PDF recipient import)
-· `barryvdh/laravel-dompdf` (PDF export) · Apache + Cloudflare Tunnel.
+PHP 8.5 · Laravel 13 · MariaDB · Livewire 4 · Tailwind (Play CDN) + Tabler
+Icons · Quill (rich-text editing) · Fortify (hand-rolled password+OTP auth) ·
+Resend (system/auth mail) · dynamic per-account SMTP built at send time
+(campaign mail) · `webklex/php-imap` (reply fetching) · `openspout`
+(CSV/XLSX import + Excel export with AutoFilter) · `smalot/pdfparser` (PDF
+import) · `barryvdh/laravel-dompdf` (PDF export) · Apache + Cloudflare Tunnel.
 
 ## Local setup
 
