@@ -30,12 +30,30 @@
         </div>
         @endif
 
-        <form method="POST" action="{{ route('otp.verify') }}" class="space-y-4">
+        <form method="POST" action="{{ route('otp.verify') }}" x-data="otpForm()" x-init="init()">
             @csrf
-            <input type="text" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" autofocus required
-                class="w-full text-center tracking-[0.5em] text-2xl font-semibold field-input">
-            <button type="submit"
-                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
+            <input type="hidden" name="code" :value="digits.join('')">
+
+            <div class="flex justify-between gap-1.5 sm:gap-2 mb-6" @paste="paste($event)">
+                <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" x-ref="box0" x-model="digits[0]" @input="onInput(0, $event)" @keydown.backspace="onBackspace(0)"
+                       class="flex-1 min-w-0 h-12 sm:h-14 text-center text-lg sm:text-xl font-semibold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" x-ref="box1" x-model="digits[1]" @input="onInput(1, $event)" @keydown.backspace="onBackspace(1)"
+                       class="flex-1 min-w-0 h-12 sm:h-14 text-center text-lg sm:text-xl font-semibold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" x-ref="box2" x-model="digits[2]" @input="onInput(2, $event)" @keydown.backspace="onBackspace(2)"
+                       class="flex-1 min-w-0 h-12 sm:h-14 text-center text-lg sm:text-xl font-semibold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" x-ref="box3" x-model="digits[3]" @input="onInput(3, $event)" @keydown.backspace="onBackspace(3)"
+                       class="flex-1 min-w-0 h-12 sm:h-14 text-center text-lg sm:text-xl font-semibold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" x-ref="box4" x-model="digits[4]" @input="onInput(4, $event)" @keydown.backspace="onBackspace(4)"
+                       class="flex-1 min-w-0 h-12 sm:h-14 text-center text-lg sm:text-xl font-semibold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="1" x-ref="box5" x-model="digits[5]" @input="onInput(5, $event)" @keydown.backspace="onBackspace(5)"
+                       class="flex-1 min-w-0 h-12 sm:h-14 text-center text-lg sm:text-xl font-semibold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            </div>
+
+            <button
+                type="submit"
+                x-ref="submitBtn"
+                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
                 <i class="ti ti-shield-check"></i>
                 Verify &amp; sign in
             </button>
@@ -48,6 +66,56 @@
     </div>
 
 </div>
+
+<script>
+    function otpForm() {
+        return {
+            digits: ['', '', '', '', '', ''],
+            boxes: null,
+            init() {
+                this.boxes = [this.$refs.box0, this.$refs.box1, this.$refs.box2, this.$refs.box3, this.$refs.box4, this.$refs.box5];
+                this.boxes[0]?.focus();
+            },
+            onInput(i, e) {
+                const digitsOnly = e.target.value.replace(/\D/g, '');
+                if (digitsOnly.length > 1) {
+                    // Mobile clipboard-suggestion / autofill sets the value directly
+                    // instead of firing a paste event — handle it the same way.
+                    this.fill(digitsOnly);
+                    return;
+                }
+                this.digits[i] = digitsOnly;
+                if (digitsOnly && i < 5) this.boxes[i + 1]?.focus();
+                this.maybeSubmit();
+            },
+            onBackspace(i) {
+                if (!this.digits[i] && i > 0) {
+                    this.boxes[i - 1]?.focus();
+                }
+            },
+            paste(e) {
+                const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+                if (!text) return;
+                e.preventDefault();
+                this.fill(text);
+            },
+            fill(text) {
+                text = text.slice(0, 6);
+                this.digits = text.split('').concat(['', '', '', '', '', '']).slice(0, 6);
+                const lastIndex = Math.min(text.length, 6) - 1;
+                if (lastIndex >= 0) this.boxes[lastIndex]?.focus();
+                this.maybeSubmit();
+            },
+            maybeSubmit() {
+                if (this.digits.join('').length === 6) {
+                    this.$refs.submitBtn.click();
+                }
+            },
+        };
+    }
+</script>
+
+@livewireScripts
 
 </body>
 </html>
