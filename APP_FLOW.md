@@ -103,9 +103,9 @@ stateDiagram-v2
     [*] --> queued: Confirm & Send (SweetAlert2 confirm required)
     queued --> queued: SendCampaignRecipientMail dispatched per recipient, staggered by throttle_seconds
     queued --> completed: no recipient left pending/queued
-    queued --> queued: retryRecipient resets one failed row to pending, same email
-    queued --> queued: resendToEmail resets a sent-or-failed row to pending, new email and/or corrected attachment
-    queued --> completed: markAsSent stamps a failed row sent directly, no automated send
+    queued --> queued: CampaignShow::retry() resets one failed row to pending, same email
+    queued --> queued: CampaignShow::resend() resets a sent-or-failed row to pending, new email and/or corrected attachment
+    queued --> completed: CampaignShow::markSent() stamps a failed row sent directly, no automated send
 
     [*] --> completed
     completed --> [*]
@@ -123,7 +123,8 @@ failure branch of `SendCampaignRecipientMail::handle()` wrap their recipient-sta
 `markCampaignCompletedIfDone()` check in one `DB::transaction()` (kept outside `Mail::send()`
 itself — never hold a DB transaction open across a slow SMTP call), so a crash between the two
 writes can't leave a campaign stuck showing `queued` forever with every recipient already
-resolved. `retryRecipient()` does the same for its own two-write reset. `confirmAndQueue()`
+resolved. `CampaignShow::retry()` does the same for its own two-write reset — a `wire:click`
+component action now, not a POST route. `confirmAndQueue()`
 guards against a second Livewire call with a `queued` bool on the component so a double-click
 can't dispatch the same batch twice. Campaign URLs are slug-bound
 (`Campaign::getRouteKeyName() === 'slug'`, random-suffixed) — never the row id.
@@ -135,8 +136,8 @@ fuzzy miss doesn't fail the send — the recipient still goes out, just with
 `attachment_path = null`, `matched_via = 'none'`, `status = 'sent'`. A spelling or naming
 mismatch between a district's officer title and its file name (e.g. "DEO - Shravasti" vs.
 `5_Shops_SHRAWASTI.xlsx`) is exactly this case. The extracted zip directory is never cleaned up
-after a campaign completes, so `resendToEmail()`'s attachment picker
-(`CampaignController::campaignZipFiles()`) can always re-offer every file the zip originally
+after a campaign completes, so `CampaignShow::resend()`'s attachment picker
+(`CampaignShow::campaignZipFiles()`) can always re-offer every file the zip originally
 produced — the campaign detail page also flags any `zip_per_recipient` row with no attachment
 with a "No attachment" badge, so a silent miss like this doesn't stay invisible.
 
@@ -259,17 +260,29 @@ flowchart TD
     class Mailer,Out,Resend good
 ```
 
-- **Livewire** (interactive flows only, per `CLAUDE.md`'s UI conventions) — `CampaignBuilder`
-  (4-step wizard: recipients → template → attachments → review), `TestEmailSender`,
-  `OfficerDirectoryImportWizard`, `RecipientListImportWizard`, `Dashboard`. Auth pages and admin
-  CRUD stay plain Blade + controllers. Every component using `WithFileUploads`
-  (`CampaignBuilder`, both import wizards) independently re-checks its own privilege inside each
-  action method — Livewire's AJAX update endpoint isn't covered by the mounting route's
-  middleware, only its initial `GET`.
-- **Controllers** — `CampaignController`, `MailTemplateController`, `RecipientController`,
-  `RecipientListController`, `Admin\{SectionController,MailAccountController,
-  DesignationController,UserManagementController,ActivityLogController}`,
-  `Auth\{LoginController,OnboardingController}`.
+- **Livewire** (the primary UI layer, per `CLAUDE.md`'s UI conventions — not interactive-flows-
+  only) — `CampaignBuilder` (4-step wizard: recipients → template → attachments → review),
+  `CampaignShow` (the campaign detail page: retry/resend/mark-sent/mark-responded/fetch-replies
+  are all component actions, no more POST routes for any of them), `TestEmailSender`,
+  `OfficerDirectoryImportWizard`, `RecipientListImportWizard`, `Dashboard`, and all of admin
+  CRUD — `Admin\{SectionIndex,SectionForm,MailAccountIndex,MailAccountForm,DesignationIndex,
+  DesignationForm,UserIndex,UserForm}` (each `*Form` handles both create and edit via
+  `mount(?Model $model = null)`). Auth pages (login/OTP/onboarding) are the one deliberate
+  exception, kept as plain controllers — no interactivity to gain, and simpler/more auditable
+  rate-limit guarantees as route middleware. Every component using `WithFileUploads`
+  (`CampaignBuilder`, both import wizards) and every full-page component with a mutating action
+  (`CampaignShow`, all 4 admin `*Form`/`*Index` pairs) independently re-checks its own privilege
+  inside each action method — Livewire's shared `/livewire/update` AJAX endpoint isn't covered by
+  the mounting route's middleware, only its initial `GET` (that shared endpoint is also where
+  `throttle:mutations` now lives for all of these, via `Livewire::setUpdateRoute()` in
+  `AppServiceProvider` — see SECURITY.md L-04).
+- **Controllers** — `CampaignController` (index, sent-mail log, test-send prefill, and the
+  XLSX/PDF export — a file download always breaks out of any SPA flow, so it stayed a plain
+  route), `MailTemplateController`, `RecipientController`, `RecipientListController`,
+  `Admin\ActivityLogController`, `Auth\{LoginController,OnboardingController}`. The other four
+  admin controllers (`SectionController`, `MailAccountController`, `DesignationController`,
+  `UserManagementController`) and their 8 `Store*Request`/`Update*Request` FormRequest classes
+  are gone — replaced by the Livewire components above.
 - **Queue** — `database` connection, two systemd-supervised `queue:work --tries=3
   --timeout=1900` workers (see `DEPLOY.md`); each `campaign_recipients` row becomes one job,
   `delay()`-staggered by `mail_account.throttle_seconds * index` (further staggered across days

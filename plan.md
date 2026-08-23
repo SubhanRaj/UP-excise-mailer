@@ -126,6 +126,19 @@ status/progress view. Everything else (auth pages, admin CRUD for users/sections
 accounts/designations) stays plain Blade + controllers — no Livewire where a controller
 redirect is enough.
 
+> **2026-08-23 correction:** the "everything else stays plain Blade + controllers" line above
+> was itself the mistake — it narrowed "Livewire 4 (per user's requested stack)" down to
+> "interactive flows only" in the same breath, contradicting what it had just said the user
+> actually asked for. That narrower reading got carried into `CLAUDE.md`'s UI conventions
+> unchallenged and stayed there until corrected. Admin CRUD (sections/mail accounts/
+> designations/users) and the campaign detail page have since been rebuilt as full Livewire
+> components — see `CLAUDE.md`'s current UI conventions section (the authoritative one) and
+> `summary.md`'s 2026-08-23 entries for what changed and why. Left this paragraph as written
+> rather than rewriting it, since it's the actual root cause, not just a stale detail — deleting
+> it would erase the one place that explains where the drift came from. Auth (login/OTP/
+> onboarding) is the one part of "everything else" that was correct to keep plain — that call
+> still stands, just no longer for the reason originally written above.
+
 ## Deploy / infra
 
 - `git init` in the project root, initial commit after scaffold.
