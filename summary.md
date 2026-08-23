@@ -1481,6 +1481,28 @@ works correctly (unlike the sibling app) — no change made; and the privilege-c
 here (`admin/_privilege_checkboxes.blade.php`) uses a plain associative array, never
 `Collection::groupBy()`, so it was never exposed to that bug either.
 
+### Sidebar-collapse flash on hard reload; hide resend once responded (2026-08-23, done)
+
+Reported while auto-searching on `/campaigns/{campaign}` (a plain GET form, debounced
+auto-submit — a genuine hard reload, not a `wire:navigate` SPA swap): the sidebar visibly
+collapsed a moment *after* the page painted expanded. Root cause, confirmed against
+`vendor/livewire/livewire/dist/livewire.js`: the `navigate` Alpine plugin fires
+`alpine:navigated` (forwarded as `livewire:navigated`) via an unconditional `setTimeout` on
+*every* page load, hard reloads included — not only SPA transitions as an earlier note in this
+file assumed. The sidebar's collapse-state restore only ran inside that listener, and the server
+always rendered `sidebar-expanded` by default, so every hard reload painted expanded first, then
+animated shut via the `#sidebar` width transition once the listener fired. Fixed the same way
+`color_scheme` avoids the equivalent dark-mode flash: `toggleSidebar()` now also mirrors
+`sidebar_collapsed` into a cookie, and `sidebar.blade.php` reads that cookie server-side to
+render the correct class (and toggle icon/tooltip) on the very first paint — the client-side
+listener still runs afterward but finds nothing to change, so no more visible animation.
+
+Also, once a recipient is manually marked "responded", the "Resend / fix attachment" button and
+its form are hidden for that row (a small "Responded — resend hidden" note takes its place) —
+no reason to offer a resend once the section has confirmed the file arrived. Retry/"Mark as
+sent" for a genuinely `failed` send stay available either way, since responding doesn't change
+whether the send itself succeeded.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a

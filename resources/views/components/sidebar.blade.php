@@ -1,4 +1,4 @@
-<aside id="sidebar" class="sidebar-expanded bg-slate-950 flex flex-col flex-shrink-0 overflow-hidden fixed inset-y-0 left-0 z-50 -translate-x-full transition-transform duration-200 ease-in-out md:translate-x-0 md:relative">
+<aside id="sidebar" class="{{ request()->cookie('sidebar_collapsed') === '1' ? 'sidebar-collapsed' : 'sidebar-expanded' }} bg-slate-950 flex flex-col flex-shrink-0 overflow-hidden fixed inset-y-0 left-0 z-50 -translate-x-full transition-transform duration-200 ease-in-out md:translate-x-0 md:relative">
 
     <div class="px-4 py-5 flex items-center gap-3 border-b border-slate-800/70 min-w-0">
         <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
@@ -96,10 +96,11 @@
 
     </nav>
 
+    @php $sidebarCollapsed = request()->cookie('sidebar_collapsed') === '1'; @endphp
     <div class="px-2 pb-2">
-        <button id="sidebar-toggle" onclick="window.toggleSidebar()" data-tooltip="Expand sidebar"
+        <button id="sidebar-toggle" onclick="window.toggleSidebar()" data-tooltip="{{ $sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar' }}"
             class="nav-link nav-link-idle w-full text-slate-500 hover:text-slate-300">
-            <i id="sidebar-toggle-icon" class="ti ti-layout-sidebar-left-collapse w-5 text-center text-base flex-shrink-0"></i>
+            <i id="sidebar-toggle-icon" class="ti {{ $sidebarCollapsed ? 'ti-layout-sidebar-left-expand' : 'ti-layout-sidebar-left-collapse' }} w-5 text-center text-base flex-shrink-0"></i>
             <span class="sidebar-text text-xs">Collapse</span>
         </button>
     </div>

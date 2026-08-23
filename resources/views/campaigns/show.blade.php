@@ -208,10 +208,15 @@
                                         <button type="submit" class="text-emerald-600 dark:text-emerald-400 hover:underline">Mark as sent</button>
                                     </form>
                                     @endif
+                                    @unless($recipient->responded_at)
                                     <button type="button" x-on:click="open = ! open" class="text-slate-500 dark:text-slate-400 hover:underline">
                                         Resend{{ $campaign->attachment_mode === 'zip_per_recipient' ? ' / fix attachment' : ' to different email' }}…
                                     </button>
+                                    @else
+                                    <span class="text-xs text-teal-600 dark:text-teal-400">Responded — resend hidden</span>
+                                    @endunless
                                 </div>
+                                @unless($recipient->responded_at)
                                 <form x-show="open" x-cloak method="POST"
                                       action="{{ route('campaigns.resend-recipient', [$campaign, $recipient]) }}"
                                       data-confirm="Resend this recipient?"
@@ -243,6 +248,7 @@
                                         Send
                                     </button>
                                 </form>
+                                @endunless
                             </div>
                             @endif
                         </td>

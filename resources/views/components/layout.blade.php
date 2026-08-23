@@ -89,6 +89,11 @@ window.toggleSidebar = function () {
     sidebar.classList.toggle('sidebar-collapsed', !collapsed);
     sidebar.classList.toggle('sidebar-expanded',   collapsed);
     localStorage.setItem('sidebar_collapsed', collapsed ? '0' : '1');
+    // Mirrored into a cookie (like color_scheme) so a hard page load — a plain form GET/POST
+    // reload, not a wire:navigate SPA swap — can render the right class server-side on first
+    // paint, instead of waiting for the client-side alpine:navigated listener below to correct
+    // it after the fact, which visibly animates the sidebar shut/open via its width transition.
+    document.cookie = 'sidebar_collapsed=' + (collapsed ? '0' : '1') + ';path=/;max-age=31536000;SameSite=Lax';
     updateSidebarIcon();
     hideTooltip();
 };
