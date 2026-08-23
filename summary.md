@@ -1667,6 +1667,7 @@ into that campaign's detail page pre-filtered to `?responded=yes`). Stat card gr
    deciding one way or the other rather than mixing. Also worth a test for
    `RecipientImportParser` and for the Blade `{{ }}`-in-`{{ }}` footgun
    (see M4) now that it's bitten twice in this codebase.
+
 ### Apache vhost on port 8082, retiring `artisan serve` (2026-08-23, done)
 
 The app now runs behind a real Apache vhost, matching `excise-budget-tracker` (port 8081) and
@@ -1678,3 +1679,29 @@ instead of `127.0.0.1:8000`. `up-excise-mailer-app.service` (`php artisan serve`
 disabled, and removed — the queue workers and tunnel unit are unaffected. Verified end-to-end:
 `mailer.exciseup.in/login` returns 200 through the tunnel, and directly against `127.0.0.1:8082`.
 `DEPLOY.md` updated to describe the Apache setup as current state rather than a pending step.
+
+### Real server details moved out of this public repo; seeded SuperAdmin removed (2026-08-23, done)
+
+Prompted by a direct question: this repo is public, and `DEPLOY.md`/`SECURITY.md`/`summary.md`
+had real production detail in them — the Cloudflare Tunnel's identifier, the box's actual server
+paths, and the personal email used for the app's own live SuperAdmin account. Fixed on two
+tracks:
+
+- **Infra detail relocated.** A new `infra-notes/laravel-apps-deploy.md` (private repo, shared
+  across all three `~/Sites` Laravel apps) now holds the real vhost/tunnel/systemd/port detail
+  for this app and its two siblings. `DEPLOY.md` here keeps only the generic
+  self-host-this-yourself steps; `SECURITY.md`'s stack line dropped the specific port. Those
+  identifiers and paths were scrubbed from every commit in this repo's git history with
+  `git filter-repo --replace-text`, and the rewritten history was force-pushed — not just
+  removed going forward.
+- **Live credential exposure found and fixed, separately** — see SECURITY.md's new C-02: this
+  repo's `DatabaseSeeder` created a live `SuperAdmin` account with a hardcoded password, publicly
+  documented in a public repo. The seeder no longer does this; the account it had created got its
+  password invalidated and every active session for it killed (`sessions` table rows deleted for
+  that user), and it now re-authenticates through a fresh signed onboarding link like any other
+  invited user. `DEPLOY.md` gained a `tinker` snippet for bootstrapping a fresh install's first
+  SuperAdmin, since that path no longer exists as a seeder.
+
+The same two fixes were applied to `pdf-markdown-pipeline` (also public — its `UserSeeder.php`
+had six hardcoded accounts, deleted entirely) and, for consistency, to `excise-budget-tracker`
+(private, so no history rewrite was needed there).

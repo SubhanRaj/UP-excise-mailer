@@ -17,6 +17,7 @@ in place rather than appending a new dated entry.
 | ID | Finding | Severity | Status |
 |----|---------|----------|--------|
 | C-01 | `APP_ENV=local` / `APP_DEBUG=true` on the live production `.env` | **CRITICAL** | **FIXED** |
+| C-02 | `DatabaseSeeder` created a live SuperAdmin account with a hardcoded, publicly-documented password | **CRITICAL** | **FIXED** |
 | M-01 | No security response headers / Content-Security-Policy | MEDIUM | **FIXED** |
 | M-02 | `SESSION_ENCRYPT=false` — OTP/login state stored in plaintext in the `sessions` table | MEDIUM | **FIXED** |
 | M-03 | `SESSION_SECURE_COOKIE` unset despite production HTTPS deployment | MEDIUM | **FIXED** |
@@ -48,6 +49,27 @@ future `cp .env.example .env` on a new environment doesn't silently regress this
 branded error pages (`resources/views/errors/*.blade.php`) render correctly with debug mode off.
 
 **Files:** `.env`, `.env.example`.
+
+---
+
+### C-02 · Hardcoded SuperAdmin Seed Account
+
+**Severity:** CRITICAL — **Status:** FIXED (2026-08-23)
+
+`database/seeders/DatabaseSeeder.php` created a `SuperAdmin` account with a fixed password on
+every fresh install, and that account was live in production. The password (and this repo's
+public visibility on GitHub) meant anyone reading the repo had full admin access to the running
+app — this repo is public.
+
+**Fix:** the `User::firstOrCreate(...)` block is removed from `DatabaseSeeder`. A fresh install
+now bootstraps its first `SuperAdmin` directly via `tinker` (see `DEPLOY.md`), never through a
+hardcoded credential in source. The account that had been created this way had its password
+invalidated and every active session for it terminated; it re-authenticates through the normal
+signed onboarding link like any invited user. `git filter-repo` scrubbed the password and the
+account's personal email from this repo's git history, and the rewritten history was
+force-pushed.
+
+**Files:** `database/seeders/DatabaseSeeder.php`, `DEPLOY.md`.
 
 ---
 
