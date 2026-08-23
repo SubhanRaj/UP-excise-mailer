@@ -23,7 +23,7 @@ in place rather than appending a new dated entry.
 | M-03 | `SESSION_SECURE_COOKIE` unset despite production HTTPS deployment | MEDIUM | **FIXED** |
 | M-04 | Livewire's global `upload-file` route had no `auth` middleware | MEDIUM | **FIXED** |
 | L-01 | `SESSION_SAME_SITE` left at framework default (`lax`) | LOW | **FIXED** |
-| L-02 | Three Livewire components had no in-component privilege re-check | LOW (defense-in-depth) | **FIXED** |
+| L-02 | Livewire components (full-page and `WithFileUploads`) had no in-component privilege re-check | LOW (defense-in-depth) | **FIXED** |
 | L-03 | Two write paths made related multi-step writes without a shared transaction | LOW (atomicity) | **FIXED** |
 
 All other areas audited (below) pass with no remediation required.
@@ -164,7 +164,11 @@ run) is registered with only `['web', RequireLivewireHeaders::class]` middleware
 mounting page route's own middleware. `mount()` only runs on the initial page load; it does not
 re-run on the subsequent AJAX calls that invoke a component's action methods. Every
 `WithFileUploads` component in this app must independently `abort_unless(hasPrivilege(...))`
-inside every action method, not just rely on the mounting route's middleware.
+inside every action method, not just rely on the mounting route's middleware. The same applies to
+any full-page Livewire component whose mounting route is only `auth`-gated (a deliberate "anyone
+signed in can view, only privileged actions can mutate" shape — see `CampaignShow`, where
+`/campaigns/{campaign}` itself stays `auth`-only, matching the original controller-based page's
+access model, but every mutating method re-checks `campaigns.send`).
 
 **Why this is LOW, not HIGH:** Livewire signs every component snapshot with a keyed checksum
 (derived from `APP_KEY`) — a client cannot forge a snapshot for a component from nothing, or
@@ -175,13 +179,19 @@ check on its own can't be exploited by a user who couldn't already reach the pag
 fragile posture: a future refactor of the route grouping, or a privilege revoked mid-session,
 has no independent backstop without it.
 
-**Current state:** every action method on `CampaignBuilder`, `OfficerDirectoryImportWizard`, and
-`RecipientListImportWizard` re-checks its own privilege via `abort_unless(auth()->user()->
-hasPrivilege(...), 403)`, independent of the mounting route's middleware. This is the pattern to
-follow for any new `WithFileUploads` component added to the app.
+**Current state:** every action method on `CampaignBuilder`, `OfficerDirectoryImportWizard`,
+`RecipientListImportWizard`, and `CampaignShow` (`retry`, `markSent`, `resend`, `toggleResponded`,
+`bulkMarkResponded`, `fetchReplies`) re-checks its own privilege via `abort_unless(auth()->user()->
+hasPrivilege(...), 403)`, independent of the mounting route's middleware. `CampaignShow`'s
+recipient-scoped mutations additionally resolve every target recipient through
+`$this->campaign->recipients()->findOrFail($id)` (the relationship, not a bare
+`CampaignRecipient::find`), so a crafted recipient id from a different campaign 403s instead of
+being touched. This is the pattern to follow for any new full-page or `WithFileUploads` component
+added to the app.
 
 **Files:** `app/Livewire/OfficerDirectoryImportWizard.php`,
-`app/Livewire/RecipientListImportWizard.php`, `app/Livewire/CampaignBuilder.php`.
+`app/Livewire/RecipientListImportWizard.php`, `app/Livewire/CampaignBuilder.php`,
+`app/Livewire/CampaignShow.php`.
 
 ---
 
@@ -202,19 +212,20 @@ Two write paths made two related writes without tying them together:
    process dies between the two calls (worker killed, OOM, deploy mid-job), a recipient could be
    marked `sent`/`failed` while the campaign stays `queued` forever even though it was actually
    the last recipient.
-2. `CampaignController::retryRecipient()` — `$recipient->update([...])` followed by
-   `$campaign->update(['status' => 'queued'])`, with no `try`/`catch` at all — an exception
-   between the two calls (or either one failing) left no way to tell the user anything went
-   wrong.
+2. `CampaignController::retryRecipient()` (since moved to `CampaignShow::retry()` when the
+   campaign detail page became a full Livewire component — same logic, same fix) —
+   `$recipient->update([...])` followed by `$campaign->update(['status' => 'queued'])`, with no
+   `try`/`catch` at all — an exception between the two calls (or either one failing) left no way
+   to tell the user anything went wrong.
 
 **Current state:** both call sites wrap just their two related writes in `DB::transaction()`
 (so either both land or neither does), with `Mail::send()` in the job kept deliberately
 *outside* the transaction — a DB transaction (and its row locks) should never stay open across a
-slow network call to an external SMTP relay. `retryRecipient()` has a `try`/`catch` that logs the
-failure and flashes an error instead of a raw 500, with nothing partially changed since the
-transaction rolls back.
+slow network call to an external SMTP relay. `retry()`/`markSent()`/`resend()` on `CampaignShow`
+each have a `try`/`catch` that logs the failure and flashes an error instead of a raw 500, with
+nothing partially changed since the transaction rolls back.
 
-**Files:** `app/Jobs/SendCampaignRecipientMail.php`, `app/Http/Controllers/CampaignController.php`.
+**Files:** `app/Jobs/SendCampaignRecipientMail.php`, `app/Livewire/CampaignShow.php`.
 
 ---
 
@@ -243,5 +254,5 @@ transaction rolls back.
 | Onboarding link — `URL::temporarySignedRoute`, single-use (gated by `email_verified_at`), 72h expiry, rate-limited (`throttle:login` on `onboarding.store`) | ✓ PASS |
 | Password policy — `Password::defaults()` requires min 8, mixed case, numbers, symbols, applied globally via `AppServiceProvider::boot()` | ✓ PASS |
 | Simple single-model CRUD (`Admin\{Designation,Section,MailAccount}Controller`, `MailTemplateController`, `RecipientListController::destroy()`, `RecipientController`'s zone/division/district edits, `OnboardingController::store()`) — each is exactly one `Model::create()`/`update()`/`delete()` call, already atomic at the database level; deliberately **not** wrapped in `DB::transaction()` | ✓ PASS (by design) |
-| IMAP reply fetching (`ImapReplyFetcher`) — the fetch route is `privilege:campaigns.send`-gated same as every other campaign write; a reply only saves if its `In-Reply-To`/`References` header matches a `message_id` this app itself generated, so an attacker can't inject an arbitrary `campaign_replies` row by emailing a section's mailbox directly, only by replying to a thread the app already started; the stored `body_text`/`subject`/`from_name` are untrusted third-party content, rendered in `campaigns/show.blade.php` exclusively through `{{ }}` auto-escaping — no `{!! !!}`, so a crafted reply body can't inject script | ✓ PASS |
-| Manual "responded" tick (`CampaignController::markResponded()`) — `privilege:campaigns.send` + `throttle:mutations` gated, single `whereIn('id', $ids)->update()` scoped through `$campaign->recipients()` (the relationship, not a bare `CampaignRecipient::whereIn`), so a crafted recipient id from a different campaign can't be touched by a user who only has access to this one; XLSX/PDF export (`CampaignController::export()`) is `auth`-only same as `show()` (reads, not writes — same access model as the rest of the campaign detail page), `abort_unless` on the format param, and the PDF Blade view renders every field through `{{ }}` | ✓ PASS |
+| IMAP reply fetching (`ImapReplyFetcher`, invoked from `CampaignShow::fetchReplies()`) — `abort_unless(hasPrivilege('campaigns.send'))` same as every other campaign write (see L-02); a reply only saves if its `In-Reply-To`/`References` header matches a `message_id` this app itself generated, so an attacker can't inject an arbitrary `campaign_replies` row by emailing a section's mailbox directly, only by replying to a thread the app already started; the stored `body_text`/`subject`/`from_name` are untrusted third-party content, rendered in `livewire/campaign-show.blade.php` exclusively through `{{ }}` auto-escaping — no `{!! !!}`, so a crafted reply body can't inject script | ✓ PASS |
+| Manual "responded" tick (`CampaignShow::toggleResponded()`/`bulkMarkResponded()`) — privilege-gated same as the rest of the component, both scoped through `$this->campaign->recipients()->...` (the relationship, not a bare `CampaignRecipient::find`/`whereIn`), so a crafted recipient id from a different campaign can't be touched by a user who only has access to this one; XLSX/PDF export (`CampaignController::export()`) stays a plain controller route, `auth`-only same as the page itself (reads, not writes), `abort_unless` on the format param, and the PDF Blade view renders every field through `{{ }}` | ✓ PASS |

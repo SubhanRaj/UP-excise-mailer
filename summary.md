@@ -1503,6 +1503,119 @@ no reason to offer a resend once the section has confirmed the file arrived. Ret
 sent" for a genuinely `failed` send stay available either way, since responding doesn't change
 whether the send itself succeeded.
 
+### Campaign detail page converted to a real Livewire component; sidebar-cookie fix that actually works (2026-08-23, done)
+
+Two things landed together, and the second explains why the previous sidebar-flash fix didn't
+actually hold up under a real hard reload:
+
+**Root cause of "the flash still happens even after hard refresh":** `sidebar_collapsed` (and
+`color_scheme`) are set via raw `document.cookie = ...` in JS — plaintext, unencrypted. Laravel's
+`EncryptCookies` middleware tries to **decrypt every incoming cookie by default**, and on failure
+(a plaintext cookie can't decrypt) it silently nulls the value out server-side
+(`Illuminate\Cookie\Middleware\EncryptCookies::decrypt()` — confirmed by reading the vendor
+source directly, not assumed). So `request()->cookie('sidebar_collapsed')` was *always* null no
+matter what the real cookie said, meaning the previous fix's server-rendered class never actually
+applied — dark mode only ever worked because `head.blade.php`'s synchronous inline script reads
+`localStorage` directly and never depended on the cookie being readable server-side at all. Fixed
+properly this time: `AppServiceProvider::boot()` now calls `EncryptCookies::except(['color_scheme',
+'sidebar_collapsed'])` — both are plain UI preferences, never session/auth state, so there's no
+security downside to leaving them unencrypted — and `request()->cookie('sidebar_collapsed')`
+genuinely reflects the real value now (verified end-to-end via a raw kernel request with the
+cookie set).
+
+**The bigger fix — `/campaigns/{campaign}` is now a full Livewire component
+(`App\Livewire\CampaignShow`), not a controller + plain Blade page.** This was flagged mid-session:
+this app is Livewire-first by design (CLAUDE.md's "UI conventions" previously said the opposite —
+corrected), and the page's plain `<form method="POST">`/GET-auto-submit actions (search,
+retry/resend/mark-sent, the new responded tick, fetch-replies) were each doing a full browser
+round-trip — which is *why* the sidebar flash was visible there specifically (a hard reload,
+not a `wire:navigate` SPA swap), and separately why the debounced search auto-submit dropped
+input focus every time it fired. Converted the whole page: `CampaignController::show()`,
+`retryRecipient()`, `markAsSent()`, `resendToEmail()`, `fetchReplies()`, and `markResponded()` are
+gone — their logic now lives as `CampaignShow` methods (`retry`, `markSent`, `resend`,
+`toggleResponded`, `bulkMarkResponded`, `fetchReplies`), each independently privilege-checked per
+the existing L-02 convention (SECURITY.md), each recipient resolved through
+`$this->campaign->recipients()->findOrFail($id)` so a cross-campaign id 403s. Search/status/
+responded-filter/sort are `#[Url]`-bound public properties (`wire:model.live.debounce` on
+search) — filtering now happens via Livewire's AJAX diffing, no navigation, no lost focus, no
+sidebar re-render at all. The old sessionStorage-diff + `setInterval(reload)` auto-refresh hack
+is gone too, replaced by `wire:poll.6s="$refresh"` gated on `$hasInFlight` — Livewire morphs just
+the changed rows in place instead of reloading the whole page. The reply-thread expand/collapse
+toggle deliberately stayed plain Alpine `x-data` (no server round-trip needed for showing
+already-loaded data — Livewire and Alpine coexist by design, not everything needs to be a wire
+call). `campaigns/show.blade.php` deleted; `resources/views/livewire/campaign-show.blade.php` is
+the new view. `POST /campaigns/{campaign}/recipients/.../retry|resend|mark-sent`,
+`/fetch-replies`, and `/recipients/mark-responded` routes are gone — those actions go through
+Livewire's own update endpoint now. `GET /campaigns/{campaign}/export/{format}` stays a plain
+controller route (a file download always breaks out of SPA flow, in any framework — converting
+it would be pointless). Added `tests/Feature/CampaignShowSmokeTest.php` (full page render +
+`toggleResponded`/search exercised via `Livewire::test()`) since this component now carries real
+privilege-gated mutation logic that had zero test coverage as a controller either.
+
+**Not yet migrated, flagged for a future pass, not done silently in this one:** admin CRUD
+(sections/mail accounts/designations/users) and the auth flow (login/OTP/onboarding) are still
+plain Blade + controllers. CLAUDE.md's UI conventions section now says admin CRUD should move to
+Livewire "as those pages are next touched" rather than staying plain by default — auth intentionally
+stays as-is (no real interactivity to gain). Whether to proactively migrate admin CRUD now, in one
+pass, versus opportunistically as each page is touched, is an open question for the user to weigh
+in on — it's a much larger, multi-page undertaking than this session's scope.
+
+### Admin CRUD (sections/mail accounts/designations/users) converted to Livewire too (2026-08-23, done)
+
+Follow-up to the above, same session — the user clarified the app was meant to be Livewire-first
+end to end from the start, not something to weigh opportunistically, so all four admin CRUD
+resources moved over now rather than "as next touched." Also clarified a misconception worth
+recording: converting `<form method="POST">` actions to `wire:click`/`wire:submit` does **not**
+move anything into the browser URL or widen the attack surface — every Livewire action still goes
+over POST to Livewire's own CSRF-protected endpoint, carrying a signed+encrypted component
+snapshot, not query-string data; only the `#[Url]`-bound filter properties (already used on
+`CampaignShow`) touch the URL at all, and those are the same plain GET filters the old pages
+already used.
+
+Each resource got two full-page Livewire components under `app/Livewire/Admin/` —
+`{Resource}Index` (list + delete via `wire:click`+`wire:confirm`) and `{Resource}Form` (handles
+both create and edit: `mount(?Model $model = null)`, same pattern CampaignShow already
+established). `SectionController`, `MailAccountController`, `DesignationController`,
+`UserManagementController`, and all 8 of their `Store*Request`/`Update*Request` FormRequest
+classes are deleted — their validation logic (including the security-relevant bits: a
+`users.manage`-only actor can't self-escalate to SuperAdmin or grant a privilege they don't
+themselves hold, blank `app_password` on Mail Account edit means "keep the existing one") moved
+into each `*Form`'s own `save()` method, verified by a dedicated escalation-guard test rather than
+just re-typed and trusted. `admin/_privilege_checkboxes.blade.php` (shared by Designations and
+Users) now binds via `wire:model` instead of a plain `name="x[]"` array — no other caller was left
+on the old pattern. Designation-privilege autofill (picking a designation fills in its default
+privileges) moved from client-side JS reading a `data-privileges` attribute to a real Livewire
+`updatedDesignationId()` hook — one less place client and server state could drift.
+
+Route names are unchanged (`admin.sections.index` etc. — the sidebar links needed zero changes)
+but `store`/`update`/`destroy`/`resend-activation` routes are gone entirely, same shape as
+`CampaignShow`'s conversion: only `index`/`create`/`edit` remain as GET routes mounting a
+component, each still gated by the existing `privilege:X` route middleware for the page load
+itself, with every mutating method additionally `abort_unless`-checking its own privilege inside
+the component (L-02 pattern, SECURITY.md) since Livewire's own update endpoint doesn't run route
+middleware. Mail Accounts kept its provider-preset (Gmail/NIC/custom) JS entirely client-side —
+setting `.value` via JS doesn't fire the native `input` event `wire:model` listens for, so the
+preset-switch handler now explicitly dispatches one after every programmatic value change
+(`setAndSync()` helper in the view) or the visible field and the component's actual state would
+silently disagree.
+
+**Two real bugs found and fixed while building this, not present in the final commit:** (1)
+`MailAccountForm::mount()` used `$mailAccount->prop !== null ? ... : ...` (no null-safe `?->`) on
+two fields — harmless-looking but threw a "read property on null" warning in create mode, since
+unlike the `??`-based lines beside it, a bare ternary doesn't get PHP's null-property-access
+suppression; (2) the provider-preset hint strings were interpolated via `@js()` *inside* a `{{ }}`
+Blade echo, which doesn't compile — `@js()` and `Js::from()` need to be called as a plain
+expression, not nested inside another directive's output. Both caught by a real `Livewire::test()`
+round-trip before commit, not just a syntax check — the second one in particular would have passed
+`php -l` cleanly and only broken at runtime.
+
+Added `tests/Feature/AdminCrudSmokeTest.php`: full create→edit→delete round-trip for Sections,
+a privilege-checkbox round-trip for Designations, a create-then-blank-password-edit round-trip for
+Mail Accounts (confirms the password truly isn't overwritten), a User create + the exact
+privilege-escalation-guard scenario (a non-admin `users.manage` holder attempting to grant
+SuperAdmin or an unheld privilege, both must fail validation), and a real-HTTP render check of all
+8 index/create pages for an authenticated SuperAdmin.
+
 **Not yet done — pick up here, in order:**
 
 1. Live-updating campaign status (currently `/campaigns/{campaign}` is a

@@ -1,4 +1,4 @@
-<x-layout title="Mail Accounts" page-title="Mail Accounts" page-subtitle="UP Department of Excise — Mailer">
+<div>
     <x-breadcrumb :items="[['name' => 'Mail Accounts']]" />
 
     <div class="flex items-center justify-between mb-4">
@@ -25,7 +25,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
                     @forelse($mailAccounts as $account)
-                    <tr>
+                    <tr wire:key="mail-account-{{ $account->id }}">
                         <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{{ $account->gmail_address }}</td>
                         <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $account->section->name }}</td>
                         <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ $account->throttle_seconds }}s</td>
@@ -50,14 +50,10 @@
                                    class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="Edit">
                                     <i class="ti ti-pencil text-base"></i>
                                 </a>
-                                <form method="POST" action="{{ route('admin.mail-accounts.destroy', $account) }}"
-                                      data-confirm="Delete this mail account?">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Delete">
-                                        <i class="ti ti-trash text-base"></i>
-                                    </button>
-                                </form>
+                                <button type="button" wire:click="delete({{ $account->id }})" wire:confirm="Delete this mail account?"
+                                        class="text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Delete">
+                                    <i class="ti ti-trash text-base"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -68,4 +64,4 @@
             </table>
         </div>
     </div>
-</x-layout>
+</div>

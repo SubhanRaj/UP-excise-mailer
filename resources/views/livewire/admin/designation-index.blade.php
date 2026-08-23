@@ -1,4 +1,4 @@
-<x-layout title="Designations" page-title="Designations" page-subtitle="UP Department of Excise — Mailer">
+<div>
     <x-breadcrumb :items="[['name' => 'Designations']]" />
 
     <div class="flex items-center justify-between mb-4">
@@ -22,7 +22,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
                     @forelse($designations as $designation)
-                    <tr>
+                    <tr wire:key="designation-{{ $designation->id }}">
                         <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{{ $designation->name }}</td>
                         <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ count($designation->default_privileges ?? []) }} selected</td>
                         <td class="px-4 py-3 text-right">
@@ -31,14 +31,11 @@
                                    class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="Edit">
                                     <i class="ti ti-pencil text-base"></i>
                                 </a>
-                                <form method="POST" action="{{ route('admin.designations.destroy', $designation) }}"
-                                      data-confirm="Delete this designation? Existing users keep whatever privileges they already have.">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Delete">
-                                        <i class="ti ti-trash text-base"></i>
-                                    </button>
-                                </form>
+                                <button type="button" wire:click="delete({{ $designation->id }})"
+                                        wire:confirm="Delete this designation? Existing users keep whatever privileges they already have."
+                                        class="text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Delete">
+                                    <i class="ti ti-trash text-base"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -49,4 +46,4 @@
             </table>
         </div>
     </div>
-</x-layout>
+</div>

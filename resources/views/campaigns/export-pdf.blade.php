@@ -18,15 +18,13 @@
     <p class="meta">Exported {{ now()->ist()->format('d M Y, H:i') }} &middot; {{ $recipients->count() }} recipients</p>
     <table>
         <thead>
-            <tr><th>Name</th><th>Email</th><th>Status</th><th>Sent At</th><th>Responded</th></tr>
+            <tr><th>Name</th><th>Status</th><th>Responded</th></tr>
         </thead>
         <tbody>
             @foreach($recipients as $recipient)
             <tr>
                 <td>{{ $recipient->name ?: '—' }}</td>
-                <td>{{ $recipient->email }}</td>
                 <td>{{ $recipient->status === 'pending' ? 'Waiting' : ucfirst($recipient->status) }}</td>
-                <td>{{ $recipient->sent_at?->ist()->format('d M Y, H:i') ?? '—' }}</td>
                 <td class="{{ $recipient->responded_at ? 'yes' : 'no' }}">{{ $recipient->responded_at ? 'Yes' : 'No' }}</td>
             </tr>
             @endforeach

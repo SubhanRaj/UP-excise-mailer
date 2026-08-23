@@ -122,9 +122,19 @@ load-bearing rules:
 Tailwind Play CDN + Inter font + self-hosted Tabler Icons
 (`public/vendor/tabler-icons`). Blade layout shell at
 `resources/views/components/{head,sidebar,header,footer}.blade.php`.
-Livewire 4 only for genuinely interactive flows (import wizard, campaign
-builder, campaign status). Auth pages and admin CRUD stay plain Blade +
-controllers — don't reach for Livewire where a controller redirect is enough.
+
+**This app is Livewire-first by design, not core Laravel with Livewire bolted on** — any page
+with per-row actions, filters, search, or anything that would otherwise reload the page belongs
+in a full-page Livewire component (`#[Layout(...)]` or `->layout(...)` on the return of
+`render()`, mounted directly off a route — see `CampaignBuilder`, `TestEmailSender`,
+`CampaignShow`), not a controller + plain Blade form. A plain `<form method="POST">` always does
+a real browser round-trip regardless of anything else on the page (including `wire:navigate`,
+which only intercepts GET link clicks) — every one of those round-trips on an otherwise-Livewire
+page is a bug to fix, not an acceptable default. Plain controllers remain fine for the auth flow
+(login/OTP/onboarding — no interactivity to speak of) and for a handful of simple one-shot
+redirects (`prefillTestSend`, file exports); admin CRUD (sections/mail accounts/designations/
+users) should move to Livewire components as those pages are next touched, following the pattern
+above, rather than staying plain Blade by default.
 
 ## Known ceilings (deliberate, not oversights)
 

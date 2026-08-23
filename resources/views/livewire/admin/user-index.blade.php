@@ -1,4 +1,4 @@
-<x-layout title="Users" page-title="Users" page-subtitle="UP Department of Excise — Mailer">
+<div>
     <x-breadcrumb :items="[['name' => 'Users']]" />
 
     <div class="flex items-center justify-between mb-4">
@@ -24,7 +24,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
                     @forelse($users as $user)
-                    <tr>
+                    <tr wire:key="user-{{ $user->id }}">
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-3">
                                 <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
@@ -58,14 +58,11 @@
                                     <i class="ti ti-pencil text-base"></i>
                                 </a>
                                 @if($user->id !== auth()->id())
-                                <form method="POST" action="{{ route('admin.users.destroy', $user) }}"
-                                      data-confirm="Deactivate this user? They will no longer be able to sign in.">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Deactivate">
-                                        <i class="ti ti-trash text-base"></i>
-                                    </button>
-                                </form>
+                                <button type="button" wire:click="delete({{ $user->id }})"
+                                        wire:confirm="Deactivate this user? They will no longer be able to sign in."
+                                        class="text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" title="Deactivate">
+                                    <i class="ti ti-trash text-base"></i>
+                                </button>
                                 @endif
                             </div>
                             @else
@@ -82,4 +79,4 @@
     </div>
 
     <div class="mt-4">{{ $users->links() }}</div>
-</x-layout>
+</div>

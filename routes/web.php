@@ -1,15 +1,20 @@
 <?php
 
 use App\Http\Controllers\Admin\ActivityLogController;
-use App\Http\Controllers\Admin\DesignationController;
-use App\Http\Controllers\Admin\MailAccountController;
-use App\Http\Controllers\Admin\SectionController;
-use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\MailTemplateController;
+use App\Livewire\Admin\DesignationForm;
+use App\Livewire\Admin\DesignationIndex;
+use App\Livewire\Admin\MailAccountForm;
+use App\Livewire\Admin\MailAccountIndex;
+use App\Livewire\Admin\SectionForm;
+use App\Livewire\Admin\SectionIndex;
+use App\Livewire\Admin\UserForm;
+use App\Livewire\Admin\UserIndex;
 use App\Livewire\CampaignBuilder;
+use App\Livewire\CampaignShow;
 use App\Livewire\TestEmailSender;
 use App\Http\Controllers\RecipientController;
 use App\Http\Controllers\RecipientListController;
@@ -66,8 +71,8 @@ Route::get('/campaigns/sent-mail', [CampaignController::class, 'sentMail'])->mid
 
 // Literal-path routes (create, test-send) must be registered before the campaigns/{campaign}
 // wildcard below — otherwise Laravel matches the wildcard first and "test-send"/"create" get
-// treated as a campaign slug, 404ing on CampaignController::show() instead of ever reaching
-// these routes at all.
+// treated as a campaign slug, 404ing on CampaignShow's implicit route binding instead of ever
+// reaching these routes at all.
 Route::middleware(['auth', 'privilege:campaigns.send'])->group(function () {
     Route::get('/campaigns/create', CampaignBuilder::class)->name('campaigns.create');
 });
@@ -78,18 +83,11 @@ Route::middleware(['auth', 'privilege:test-email.send'])->group(function () {
         ->middleware('throttle:mutations')->name('campaigns.test-send.prefill');
 });
 
-Route::get('/campaigns/{campaign}', [CampaignController::class, 'show'])->middleware('auth')->name('campaigns.show');
+// Full Livewire component — retry/resend/mark-sent/mark-responded/fetch-replies are all
+// wire:click actions on it now, not separate POST routes; export stays a plain controller route
+// since a file download always breaks out of the SPA flow in any framework.
+Route::get('/campaigns/{campaign}', CampaignShow::class)->middleware('auth')->name('campaigns.show');
 
-Route::post('/campaigns/{campaign}/recipients/{recipient}/retry', [CampaignController::class, 'retryRecipient'])
-    ->middleware(['auth', 'privilege:campaigns.send', 'throttle:mutations'])->name('campaigns.retry-recipient');
-Route::post('/campaigns/{campaign}/recipients/{recipient}/resend', [CampaignController::class, 'resendToEmail'])
-    ->middleware(['auth', 'privilege:campaigns.send', 'throttle:mutations'])->name('campaigns.resend-recipient');
-Route::post('/campaigns/{campaign}/recipients/{recipient}/mark-sent', [CampaignController::class, 'markAsSent'])
-    ->middleware(['auth', 'privilege:campaigns.send', 'throttle:mutations'])->name('campaigns.mark-sent-recipient');
-Route::post('/campaigns/{campaign}/fetch-replies', [CampaignController::class, 'fetchReplies'])
-    ->middleware(['auth', 'privilege:campaigns.send', 'throttle:mutations'])->name('campaigns.fetch-replies');
-Route::post('/campaigns/{campaign}/recipients/mark-responded', [CampaignController::class, 'markResponded'])
-    ->middleware(['auth', 'privilege:campaigns.send', 'throttle:mutations'])->name('campaigns.mark-responded');
 Route::get('/campaigns/{campaign}/export/{format}', [CampaignController::class, 'export'])
     ->middleware('auth')->name('campaigns.export');
 
@@ -100,22 +98,34 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'privilege:activity-
 });
 
 // ── Admin: sections, mail accounts, designations, users — SuperAdmin, or the matching
-//    privilege (privilege:X already lets SuperAdmin through too, via User::hasPrivilege()) ──
+//    privilege (privilege:X already lets SuperAdmin through too, via User::hasPrivilege()).
+//    All full Livewire components now — index/create/edit are GET routes mounting a component
+//    (still route-middleware-gated for the page load itself), but store/update/destroy/
+//    resend-activation are gone as separate routes: those are wire:click/wire:submit actions on
+//    the component now, each independently privilege-checked (see SECURITY.md L-02) since
+//    Livewire's own update endpoint doesn't run this group's middleware. ──
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'throttle:mutations'])->group(function () {
-    Route::resource('sections', SectionController::class)->except(['show'])
-        ->middleware('privilege:sections.manage');
-    Route::resource('mail-accounts', MailAccountController::class)->except(['show'])
-        ->parameters(['mail-accounts' => 'mailAccount'])->middleware('privilege:mail-accounts.manage');
-    Route::resource('designations', DesignationController::class)->except(['show'])
-        ->middleware('privilege:designations.manage');
+    Route::middleware('privilege:sections.manage')->group(function () {
+        Route::get('/sections', SectionIndex::class)->name('sections.index');
+        Route::get('/sections/create', SectionForm::class)->name('sections.create');
+        Route::get('/sections/{section}/edit', SectionForm::class)->name('sections.edit');
+    });
+
+    Route::middleware('privilege:mail-accounts.manage')->group(function () {
+        Route::get('/mail-accounts', MailAccountIndex::class)->name('mail-accounts.index');
+        Route::get('/mail-accounts/create', MailAccountForm::class)->name('mail-accounts.create');
+        Route::get('/mail-accounts/{mailAccount}/edit', MailAccountForm::class)->name('mail-accounts.edit');
+    });
+
+    Route::middleware('privilege:designations.manage')->group(function () {
+        Route::get('/designations', DesignationIndex::class)->name('designations.index');
+        Route::get('/designations/create', DesignationForm::class)->name('designations.create');
+        Route::get('/designations/{designation}/edit', DesignationForm::class)->name('designations.edit');
+    });
 
     Route::prefix('users')->name('users.')->middleware('privilege:users.manage')->group(function () {
-        Route::get('/', [UserManagementController::class, 'index'])->name('index');
-        Route::get('/create', [UserManagementController::class, 'create'])->name('create');
-        Route::post('/', [UserManagementController::class, 'store'])->name('store');
-        Route::get('/{user}/edit', [UserManagementController::class, 'edit'])->name('edit');
-        Route::patch('/{user}', [UserManagementController::class, 'update'])->name('update');
-        Route::delete('/{user}', [UserManagementController::class, 'destroy'])->name('destroy');
-        Route::post('/{user}/resend-activation', [UserManagementController::class, 'resendActivation'])->name('resend-activation');
+        Route::get('/', UserIndex::class)->name('index');
+        Route::get('/create', UserForm::class)->name('create');
+        Route::get('/{user}/edit', UserForm::class)->name('edit');
     });
 });

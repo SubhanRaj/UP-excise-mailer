@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
@@ -23,6 +24,15 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Password::defaults(fn () => Password::min(8)->mixedCase()->numbers()->symbols());
+
+        // Both are plain client-side UI preferences (never session/auth state), set via raw
+        // `document.cookie = ...` JS and read back server-side for the anti-flash class on
+        // first paint (color_scheme on <html>, sidebar_collapsed on #sidebar). Laravel's
+        // EncryptCookies middleware tries to decrypt every incoming cookie by default and
+        // silently nulls out any it can't (a plaintext cookie fails decryption) — without this
+        // exemption, request()->cookie('sidebar_collapsed') is always null server-side, so the
+        // anti-flash class never actually applies no matter what the cookie's real value is.
+        EncryptCookies::except(['color_scheme', 'sidebar_collapsed']);
 
         // Livewire's temporary-file-upload endpoint is registered globally at boot,
         // independent of any page route's middleware — without this it defaults to
