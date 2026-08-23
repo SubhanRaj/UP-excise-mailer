@@ -146,8 +146,7 @@ onboarding) and a few one-shot redirects (`prefillTestSend`, file exports).
 
 ## Writing docs/commits/comments
 
-State it, don't frame it as a contrast. "Livewire-first" beats "Livewire-first, not core Laravel
-with Livewire bolted on" — a developer reading a Livewire-first codebase already knows what it
-isn't. Skip the "X, not Y" pairing, the recap-before-the-point, the reason restated after it's
-already obvious from the fact itself. If a sentence would be exactly as clear with its second half
-cut, cut it.
+Use the `dev-docs-human` skill (`~/.claude/skills/dev-docs-human`) for README/architecture-doc/
+code-comment/PR-description writing — invoke with `/dev-docs-human`, or it triggers automatically
+on dev-facing doc work. Cuts AI narrative tells: before/after story framing, "X, not Y" contrast
+used to explain a design choice, inflated vocabulary, emoji-heading README theater.
