@@ -206,8 +206,6 @@
                                     <button type="button" wire:click="toggleResend({{ $recipient->id }})" class="text-slate-500 dark:text-slate-400 hover:underline">
                                         Resend{{ $campaign->attachment_mode === 'zip_per_recipient' ? ' / fix attachment' : ' to different email' }}…
                                     </button>
-                                    @else
-                                    <span class="text-xs text-teal-600 dark:text-teal-400">Responded — resend hidden</span>
                                     @endunless
                                 </div>
                                 @if($resendOpenId === $recipient->id)

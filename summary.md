@@ -1705,3 +1705,36 @@ tracks:
 The same two fixes were applied to `pdf-markdown-pipeline` (also public — its `UserSeeder.php`
 had six hardcoded accounts, deleted entirely) and, for consistency, to `excise-budget-tracker`
 (private, so no history rewrite was needed there).
+
+### PDF export failing under Apache: PCRE JIT vs. systemd's MemoryDenyWriteExecute (2026-08-24, done)
+
+`/campaigns/{campaign}/export/pdf` was throwing a fatal error in production while every other page
+worked. The stack trace pointed to `preg_match(): Allocation of JIT memory failed` during Blade
+compilation of the export view. Root cause: Ubuntu's `apache2.service` unit sets
+`MemoryDenyWriteExecute=yes`, which blocks PCRE's JIT compiler from mapping executable memory —
+any `preg_match()` on a pattern not yet JIT-compiled throws a warning that Laravel's error handler
+turns into a fatal exception. This only surfaced now because the app moved from `artisan serve`
+(no systemd sandboxing) to the Apache vhost this same day — every other view already had a
+compiled Blade cache from before the switch, so the export view, freshly hit for the first time
+under Apache, was the one to trip it.
+
+Fixed with `pcre.jit=0` in `/etc/php/8.5/apache2/php.ini` plus an Apache reload — the exact fix
+Laravel's own error message suggested. `php artisan view:cache` was run as an immediate stopgap
+before the php.ini fix landed, but that only masks the problem: it precompiles views ahead of time
+via the CLI (unaffected by Apache's systemd sandbox), so nothing triggers a fresh JIT compile at
+request time — until the next `view:clear`/`optimize:clear` or deploy, when the first hit to any
+changed view breaks the same way again. `pcre.jit=0` is the fix that actually holds.
+
+### Dropped the "Responded — resend hidden" label on the campaign detail page (2026-08-24, done)
+
+`CampaignShow` hides the Resend button once a recipient is marked responded — that behavior
+stays, since a response usually means nothing further needs sending. What changed is the label
+that used to sit in its place: "Responded — resend hidden" read as a stray debug string rather
+than a status. The button now just isn't rendered for a responded recipient, with nothing shown
+in its place, matching how the rest of the row already leaves cells blank rather than narrating
+why an action isn't available.
+
+An earlier pass at this same request went further and made Resend always visible regardless of
+response status, plus renamed the separate "Sent Mail" page to "Campaign Tracker" and added a
+Responded filter to it — both reverted. Sent Mail's name, grouping (campaign sends vs. test
+sends), and columns are unchanged from before this session.

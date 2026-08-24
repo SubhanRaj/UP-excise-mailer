@@ -33,5 +33,11 @@ on your own server, the pattern is:
    ```
    Every other user goes through Admin → Users, which sends a real invite email.
 
+If Apache's systemd unit sets `MemoryDenyWriteExecute=yes` (Ubuntu's stock `apache2.service`
+does), PCRE's JIT compiler can't map executable memory, and any `preg_match()` on a pattern
+that hasn't been JIT-compiled yet throws a warning that Laravel turns into a fatal error —
+including inside Blade compilation, which affects any page whose view isn't already compiled.
+Set `pcre.jit=0` in the Apache PHP `php.ini` (not the CLI one) and reload Apache.
+
 See [CLAUDE.md](./CLAUDE.md) for the application architecture and [SECURITY.md](./SECURITY.md)
 for the security posture.
