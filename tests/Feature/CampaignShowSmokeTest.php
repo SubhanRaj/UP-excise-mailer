@@ -145,4 +145,47 @@ class CampaignShowSmokeTest extends TestCase
         $this->assertContains('Waiting Officer', $names);
         $this->assertNotContains('Responded Officer', $names);
     }
+
+    /** Same regression as the XLSX case above, against the PDF export path. */
+    public function test_pdf_export_override_ignores_the_pages_own_status_filter(): void
+    {
+        $section = Section::create(['name' => 'Test Section', 'slug' => 'test-section']);
+        $mailAccount = MailAccount::create([
+            'section_id' => $section->id, 'gmail_address' => 'test@example.com', 'app_password' => 'secret',
+            'smtp_host' => 'smtp.example.com', 'smtp_port' => 587, 'is_active' => true,
+        ]);
+        $user = User::factory()->create(['username' => 'testuser4', 'role' => 'SuperAdmin', 'section_id' => $section->id]);
+        $campaign = Campaign::create([
+            'name' => 'PDF Export Test Campaign', 'slug' => Campaign::uniqueSlugFor('PDF Export Test Campaign'),
+            'mail_account_id' => $mailAccount->id, 'subject' => 'S', 'body' => 'B',
+            'recipient_scope' => 'all', 'attachment_mode' => 'none', 'status' => 'completed', 'created_by' => $user->id,
+        ]);
+        CampaignRecipient::create([
+            'campaign_id' => $campaign->id, 'recipient_type' => 'manual',
+            'name' => 'Responded Officer', 'email' => 'responded@example.com',
+            'status' => 'sent', 'sent_at' => now(), 'responded_at' => now(),
+        ]);
+        CampaignRecipient::create([
+            'campaign_id' => $campaign->id, 'recipient_type' => 'manual',
+            'name' => 'Waiting Officer', 'email' => 'waiting@example.com',
+            'status' => 'failed', 'sent_at' => null,
+        ]);
+
+        $this->actingAs($user);
+
+        $component = Livewire::test(\App\Livewire\CampaignShow::class, ['campaign' => $campaign])
+            ->set('statusFilter', 'sent')
+            ->call('export', 'pdf', 'no')
+            ->assertFileDownloaded();
+
+        $content = base64_decode(data_get($component->effects, 'download.content'));
+        $this->assertStringStartsWith('%PDF', $content);
+
+        // The PDF's own content streams are Flate-compressed, so extract text the same way the
+        // app's own PDF import does rather than grepping the raw bytes.
+        $text = (new \Smalot\PdfParser\Parser())->parseContent($content)->getText();
+
+        $this->assertStringContainsString('Waiting Officer', $text);
+        $this->assertStringNotContainsString('Responded Officer', $text);
+    }
 }
