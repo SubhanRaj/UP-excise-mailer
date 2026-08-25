@@ -301,6 +301,57 @@ class CampaignShow extends Component
             ->orderBy($this->sort, $this->direction);
     }
 
+    /**
+     * $responded null: export whatever's currently on screen (status filter + responded filter +
+     * search), read fresh from the DB at export time. $responded 'yes'/'no': a pure responded/
+     * not-responded list regardless of the page's status filter or search — these ignore both
+     * rather than intersecting with them, since a leftover status/search filter silently combined
+     * with "not responded only" is exactly what produced an empty export before this existed.
+     */
+    public function export(string $format, ?string $responded = null): mixed
+    {
+        abort_unless(in_array($format, ['xlsx', 'pdf'], true), 404);
+
+        $recipients = $this->campaign->recipients()
+            ->when($responded === null && $this->statusFilter !== '', fn ($q) => $q->where('status', $this->statusFilter))
+            ->when($responded === null && $this->respondedFilter !== '', fn ($q) => $this->respondedFilter === 'yes' ? $q->whereNotNull('responded_at') : $q->whereNull('responded_at'))
+            ->when($responded !== null, fn ($q) => $responded === 'yes' ? $q->whereNotNull('responded_at') : $q->whereNull('responded_at'))
+            ->when($responded === null && $this->search !== '', function ($q) {
+                $term = '%'.$this->search.'%';
+                $q->where(fn ($q2) => $q2->where('name', 'like', $term)->orWhere('email', 'like', $term));
+            })
+            ->orderBy('name')
+            ->get();
+
+        $filename = str($this->campaign->name)->slug()->append('-recipients');
+
+        if ($format === 'xlsx') {
+            return response()->streamDownload(function () use ($recipients) {
+                $writer = new \OpenSpout\Writer\XLSX\Writer();
+                $writer->openToFile('php://output');
+                $writer->getCurrentSheet()->setAutoFilter(new \OpenSpout\Writer\AutoFilter(0, 1, 2, $recipients->count() + 1));
+                $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues(['Name', 'Status', 'Responded']));
+                foreach ($recipients as $recipient) {
+                    $writer->addRow(\OpenSpout\Common\Entity\Row::fromValues([
+                        $recipient->name ?: '—',
+                        $recipient->status === 'pending' ? 'Waiting' : ucfirst($recipient->status),
+                        $recipient->responded_at ? 'Yes' : 'No',
+                    ]));
+                }
+                $writer->close();
+            }, "{$filename}.xlsx", ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
+        }
+
+        $campaign = $this->campaign;
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('campaigns.export-pdf', compact('campaign', 'recipients'));
+
+        return response()->streamDownload(
+            fn () => print($pdf->output()),
+            "{$filename}.pdf",
+            ['Content-Type' => 'application/pdf']
+        );
+    }
+
     /** Files this campaign's zip actually extracted (excludes the uploaded zip itself), keyed by their storage path. */
     private function campaignZipFiles(): array
     {

@@ -129,7 +129,10 @@ return of `render()`, mounted directly off a route — `CampaignBuilder`, `TestE
 `CampaignShow`, all of admin CRUD). A `<form method="POST">` always does a real browser round-trip
 regardless of `wire:navigate` (which only intercepts GET link clicks), so that's a bug to fix, not
 an acceptable default, on an otherwise-Livewire page. Plain controllers: auth (login/OTP/
-onboarding) and a few one-shot redirects (`prefillTestSend`, file exports).
+onboarding), a few one-shot redirects (`prefillTestSend`), and `RecipientController`'s directory
+export. `CampaignShow`'s own XLSX/PDF export is a `wire:click`-triggered component method —
+Livewire's `SupportFileDownloads` turns a returned `StreamedResponse` into a real browser download
+without a page navigation, so a file download doesn't force a plain route the way it used to.
 
 ## Known ceilings (deliberate, not oversights)
 

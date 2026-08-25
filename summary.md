@@ -1738,3 +1738,26 @@ An earlier pass at this same request went further and made Resend always visible
 response status, plus renamed the separate "Sent Mail" page to "Campaign Tracker" and added a
 Responded filter to it — both reverted. Sent Mail's name, grouping (campaign sends vs. test
 sends), and columns are unchanged from before this session.
+
+### Campaign export moved from a GET query-string route into a Livewire action (2026-08-24, done)
+
+The "Not responded only" / "Responded only" export links on the campaign detail page could come
+back with an empty file: the links only overrode the `responded` query param, so a status filter
+or search term still active on the page kept applying underneath, and the two could intersect to
+zero rows — "not responded" plus a leftover "sent" status filter, for instance. The code comment
+above the link builder said the override "forces the export to that list regardless of the page's
+own filter," which wasn't actually true for status or search, only for `responded` itself.
+
+Rebuilt as a `CampaignShow::export(string $format, ?string $responded = null)` component method,
+triggered by `wire:click` instead of `<a href>` GET links — filter state now travels as method
+arguments and component properties over Livewire's AJAX request instead of a URL query string.
+`$responded === null` (the "All (current filters)" option) still applies whatever's on screen —
+status filter, responded filter, search — read fresh from the database at click time, not from
+the currently-rendered page. `$responded` set to `'yes'`/`'no'` (the override options) now ignores
+status and search entirely rather than intersecting with them, so "Responded only" always returns
+every responded recipient regardless of what else is filtered on screen — no more silent empty
+exports. `CampaignController::export()` and the `campaigns.export` route are gone; Livewire's
+`SupportFileDownloads` feature turns a `StreamedResponse` returned from a component method into a
+real browser download without a page navigation, so the file-download-breaks-SPA-flow reason for
+keeping this on a plain controller route no longer applies. `RecipientController`'s directory
+export stays a plain route — it isn't part of a Livewire page.

@@ -83,13 +83,10 @@ Route::middleware(['auth', 'privilege:test-email.send'])->group(function () {
         ->middleware('throttle:mutations')->name('campaigns.test-send.prefill');
 });
 
-// Full Livewire component — retry/resend/mark-sent/mark-responded/fetch-replies are all
-// wire:click actions on it now, not separate POST routes; export stays a plain controller route
-// since a file download always breaks out of the SPA flow in any framework.
+// Full Livewire component — retry/resend/mark-sent/mark-responded/fetch-replies/export are all
+// wire:click actions on it; Livewire's SupportFileDownloads feature turns a returned
+// StreamedResponse into a real browser download without leaving the AJAX flow.
 Route::get('/campaigns/{campaign}', CampaignShow::class)->middleware('auth')->name('campaigns.show');
-
-Route::get('/campaigns/{campaign}/export/{format}', [CampaignController::class, 'export'])
-    ->middleware('auth')->name('campaigns.export');
 
 // ── Admin: activity log — SuperAdmin + anyone granted activity-logs.view ────────────────
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'privilege:activity-logs.view', 'throttle:mutations'])->group(function () {

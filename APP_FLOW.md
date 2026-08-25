@@ -262,8 +262,8 @@ flowchart TD
 
 - **Livewire** (the primary UI layer, per `CLAUDE.md`'s UI conventions — not interactive-flows-
   only) — `CampaignBuilder` (4-step wizard: recipients → template → attachments → review),
-  `CampaignShow` (the campaign detail page: retry/resend/mark-sent/mark-responded/fetch-replies
-  are all component actions, no more POST routes for any of them), `TestEmailSender`,
+  `CampaignShow` (the campaign detail page: retry/resend/mark-sent/mark-responded/fetch-replies/
+  export are all component actions, no separate routes for any of them), `TestEmailSender`,
   `OfficerDirectoryImportWizard`, `RecipientListImportWizard`, `Dashboard`, and all of admin
   CRUD — `Admin\{SectionIndex,SectionForm,MailAccountIndex,MailAccountForm,DesignationIndex,
   DesignationForm,UserIndex,UserForm}` (each `*Form` handles both create and edit via
@@ -276,9 +276,9 @@ flowchart TD
   the mounting route's middleware, only its initial `GET` (that shared endpoint is also where
   `throttle:mutations` now lives for all of these, via `Livewire::setUpdateRoute()` in
   `AppServiceProvider` — see SECURITY.md L-04).
-- **Controllers** — `CampaignController` (index, sent-mail log, test-send prefill, and the
-  XLSX/PDF export — a file download always breaks out of any SPA flow, so it stayed a plain
-  route), `MailTemplateController`, `RecipientController`, `RecipientListController`,
+- **Controllers** — `CampaignController` (index, sent-mail log, test-send prefill),
+  `MailTemplateController`, `RecipientController` (including its directory export),
+  `RecipientListController`,
   `Admin\ActivityLogController`, `Auth\{LoginController,OnboardingController}`. The other four
   admin controllers (`SectionController`, `MailAccountController`, `DesignationController`,
   `UserManagementController`) and their 8 `Store*Request`/`Update*Request` FormRequest classes
