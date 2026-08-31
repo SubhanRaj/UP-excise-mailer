@@ -286,7 +286,9 @@ flowchart TD
 - **Queue** — `database` connection, two systemd-supervised `queue:work --tries=3
   --timeout=1900` workers (see `DEPLOY.md`); each `campaign_recipients` row becomes one job,
   `delay()`-staggered by `mail_account.throttle_seconds * index` (further staggered across days
-  once `daily_send_cap` is hit).
+  once `daily_send_cap` is hit). `SendCampaignRecipientMail` also enforces a 60s-minimum floor
+  per account via `MailAccount::reserveSendSlot()` right before sending — the only pacing a
+  retry or resend gets, since both dispatch immediately with no `delay()`.
 - **MySQL/MariaDB** — `zones`/`divisions`/`districts` (fixed 5/18/75 org tree, seeded),
   `sections`/`mail_accounts`, `designations`, `users`, `activity_logs`,
   `recipient_lists`/`recipient_list_items`, `mail_templates`, `campaigns`/`campaign_recipients`.

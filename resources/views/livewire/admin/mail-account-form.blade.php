@@ -76,7 +76,8 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="field-label">Delay Between Sends (seconds)</label>
-                    <input type="number" wire:model="throttleSeconds" required class="field-input @error('throttleSeconds') field-error @enderror">
+                    <input type="number" wire:model="throttleSeconds" required min="60" class="field-input @error('throttleSeconds') field-error @enderror">
+                    <p class="field-hint">60s minimum — enforced for every send from this account (including retries and resends), not just the value here.</p>
                     @error('throttleSeconds')<p class="field-err-msg">{{ $message }}</p>@enderror
                 </div>
                 <div>

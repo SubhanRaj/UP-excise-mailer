@@ -1761,3 +1761,24 @@ exports. `CampaignController::export()` and the `campaigns.export` route are gon
 real browser download without a page navigation, so the file-download-breaks-SPA-flow reason for
 keeping this on a plain controller route no longer applies. `RecipientController`'s directory
 export stays a plain route — it isn't part of a Livewire page.
+
+### 60-second minimum cooldown between sends on any one mail account (2026-08-26, done)
+
+An account was rate-limited/blocked by its provider before (see the Zoho block incident noted
+against `a850dfc`). `throttle_seconds` already staggered a campaign's own initial queue dispatch,
+but retry and resend (`CampaignShow::retry()`/`resend()`) dispatch `SendCampaignRecipientMail`
+immediately with no `delay()` of their own — a run of retries after a failed batch could burst
+well under a minute apart regardless of what `throttle_seconds` was set to.
+
+Added `MailAccount::SEND_COOLDOWN_SECONDS` (60) as a hard floor, enforced in
+`SendCampaignRecipientMail::handle()` via `MailAccount::reserveSendSlot()` right before every
+send — covering the initial queue dispatch, retry, and resend alike, since all three funnel
+through this one job. The reservation is claimed atomically under a `Cache::lock` (held only long
+enough to read/write the timestamp, not for the wait itself) so two queue workers racing to send
+from the same account get serialized 60s apart instead of both computing "0s to wait" against the
+same stale timestamp. `MailAccountForm`'s `throttleSeconds` validation now refuses anything below
+60 rather than letting the configured value quietly undersell what actually happens at send time;
+a migration bumped any existing account already below 60 up to it and changed the column's
+default from 4 to 60. `TestEmailSender`'s manual test-send stayed out of scope — it's a one-off
+admin action, not the bulk pattern that caused the block, and blocking a request for up to 60s to
+enforce it there risked timing out the request itself.

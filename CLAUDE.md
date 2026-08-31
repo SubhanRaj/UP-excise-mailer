@@ -36,7 +36,7 @@ referenced.
 |---|---|
 | `zones` / `divisions` / `districts` | Fixed 5/18/75 org hierarchy, JC/DC/DEO name+email+CUG. Seeded via `GeoOrgSeeder` from `database/seeders/data/*.json`, sourced from the department's own contact lists. **Do not treat this as more authoritative than it is** — some districts may lack email/CUG; verify before a real send. |
 | `sections` | HQ sections (e.g. Enforcement, Admin) — each holds users and one or more `mail_accounts`. |
-| `mail_accounts` | Gmail address + `app_password` (encrypted cast) per section. `throttle_seconds` / `daily_send_cap` bound how fast a campaign sends. Optional `imap_host`/`imap_port` opt an account into reply fetching (see Sending mail below). |
+| `mail_accounts` | Gmail address + `app_password` (encrypted cast) per section. `throttle_seconds` (60s minimum, see Sending mail below) / `daily_send_cap` bound how fast a campaign sends. Optional `imap_host`/`imap_port` opt an account into reply fetching (see Sending mail below). |
 | `designations` | Job title + `default_privileges` preset applied to new users on that designation. |
 | `users` | `role` (SuperAdmin/Admin/User) + `privileges` JSON, `designation_id` (standard rank), `post` (free-text specific posting/charge, e.g. "Prevention & Enforcement" — distinct from `designation_id`, which is the standard rank), `section_id`. `password` nullable until invite accepted. |
 | `activity_logs` | Full audit trail — every non-GET authenticated request + login/logout, `ActivityLog::record()` (never throws). |
@@ -72,7 +72,13 @@ credentials never sit in `.env` or a long-lived `config()` array outside the
 request that's actually sending. Each `campaign_recipients` row becomes one
 queued job (`database` queue), dispatched with a `delay()` staggered by
 `mail_account.throttle_seconds * index` so a 75-recipient campaign trickles
-out instead of bursting past Gmail's caps.
+out instead of bursting past Gmail's caps. On top of that per-campaign
+stagger, `SendCampaignRecipientMail` enforces `MailAccount::SEND_COOLDOWN_SECONDS`
+(60s) as a hard floor via `MailAccount::reserveSendSlot()` before every send —
+this is the only guard on a retry or resend, which dispatch immediately with
+no `delay()` of their own, so without it a run of retries could burst well
+past a minute apart. `throttle_seconds` itself can't be set below that floor
+(enforced in `MailAccountForm`'s validation, not just the job).
 
 `zip_per_recipient` attachment matching: normalize both filenames and
 recipient names (strip extension, slugify), try exact match then a

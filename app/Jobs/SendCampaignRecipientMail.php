@@ -36,6 +36,13 @@ class SendCampaignRecipientMail implements ShouldQueue
 
         $account = $recipient->campaign->mailAccount;
 
+        // A floor under throttle_seconds, covering paths that don't go through this job's own
+        // delay()-based stagger (a retry or resend dispatches immediately) — see
+        // MailAccount::SEND_COOLDOWN_SECONDS.
+        if ($wait = $account->reserveSendSlot()) {
+            sleep($wait);
+        }
+
         try {
             config(['mail.mailers.dynamic' => $account->mailerConfig()]);
 

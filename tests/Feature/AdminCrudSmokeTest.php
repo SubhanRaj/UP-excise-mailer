@@ -70,7 +70,7 @@ class AdminCrudSmokeTest extends TestCase
             ->set('appPassword', 'secret123')
             ->set('smtpHost', 'smtp.gmail.com')
             ->set('smtpPort', 587)
-            ->set('throttleSeconds', '4')
+            ->set('throttleSeconds', '60')
             ->call('save')
             ->assertRedirect(route('admin.mail-accounts.index'));
 
@@ -79,10 +79,16 @@ class AdminCrudSmokeTest extends TestCase
 
         // Blank password on edit must NOT overwrite the stored one.
         Livewire::test(\App\Livewire\Admin\MailAccountForm::class, ['mailAccount' => $account])
-            ->set('throttleSeconds', '9')
+            ->set('throttleSeconds', '90')
             ->call('save');
         $this->assertSame('secret123', $account->fresh()->app_password);
-        $this->assertSame(9, $account->fresh()->throttle_seconds);
+        $this->assertSame(90, $account->fresh()->throttle_seconds);
+
+        // Below MailAccount::SEND_COOLDOWN_SECONDS is refused, not silently clamped.
+        Livewire::test(\App\Livewire\Admin\MailAccountForm::class, ['mailAccount' => $account])
+            ->set('throttleSeconds', '30')
+            ->call('save')
+            ->assertHasErrors(['throttleSeconds']);
     }
 
     public function test_user_form_creates_account_and_privilege_escalation_guard_holds(): void

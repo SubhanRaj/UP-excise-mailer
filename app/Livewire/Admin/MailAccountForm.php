@@ -21,7 +21,7 @@ class MailAccountForm extends Component
 
     public int $smtpPort = 587;
 
-    public string $throttleSeconds = '4';
+    public string $throttleSeconds = '60';
 
     public string $dailySendCap = '';
 
@@ -40,7 +40,7 @@ class MailAccountForm extends Component
         $this->gmailAddress = $mailAccount->gmail_address ?? '';
         $this->smtpHost = $mailAccount->smtp_host ?? 'smtp.gmail.com';
         $this->smtpPort = $mailAccount->smtp_port ?? 587;
-        $this->throttleSeconds = (string) ($mailAccount->throttle_seconds ?? 4);
+        $this->throttleSeconds = (string) ($mailAccount->throttle_seconds ?? 60);
         $this->dailySendCap = $mailAccount?->daily_send_cap !== null ? (string) $mailAccount->daily_send_cap : '';
         $this->imapHost = $mailAccount->imap_host ?? '';
         $this->imapPort = $mailAccount?->imap_port !== null ? (string) $mailAccount->imap_port : '993';
@@ -60,7 +60,9 @@ class MailAccountForm extends Component
             'appPassword' => [$this->mailAccount ? 'nullable' : 'required', 'string', 'max:255'],
             'smtpHost' => ['required', 'string', 'max:255'],
             'smtpPort' => ['required', 'integer', 'min:1', 'max:65535'],
-            'throttleSeconds' => ['required', 'integer', 'min:1', 'max:3600'],
+            // Below MailAccount::SEND_COOLDOWN_SECONDS is refused here rather than silently
+            // overridden at send time, so the configured value never misleads about actual pacing.
+            'throttleSeconds' => ['required', 'integer', 'min:'.MailAccount::SEND_COOLDOWN_SECONDS, 'max:3600'],
             'dailySendCap' => ['nullable', 'integer', 'min:1'],
             'imapHost' => ['nullable', 'string', 'max:255'],
             'imapPort' => ['nullable', 'required_with:imapHost', 'integer', 'min:1', 'max:65535'],
